@@ -837,6 +837,7 @@ QStatus AllJoynPeerObj::AuthenticatePeer(AllJoynMessageType msgType, const qcc::
     KeyStore& keyStore = bus->GetInternal().GetKeyStore();
     bool authTried = false;
     bool firstPass = true;
+    bool authTried = false;
     do {
         /*
          * Try to load the master secret for the remote peer. It is possible that the master secret
@@ -903,6 +904,10 @@ QStatus AllJoynPeerObj::AuthenticatePeer(AllJoynMessageType msgType, const qcc::
             MsgArg arg("s", outStr.c_str());
             status = remotePeerObj.MethodCall(*(ifc->GetMember("AuthChallenge")), &arg, 1, replyMsg, AUTH_TIMEOUT);
             if (status == ER_OK) {
+                /*
+                 * This will let us know if we need to make an AuthenticationComplete callback below.
+                 */
+                authTried = true;
                 if (authState == SASLEngine::ALLJOYN_AUTH_SUCCESS) {
                     SetRights(peerState, sasl.AuthenticationIsMutual(), false /*responder*/);
                     break;
@@ -1028,78 +1033,78 @@ void AllJoynPeerObj::AlarmTriggered(const Alarm& alarm, QStatus reason)
     Request* req = static_cast<Request*>(alarm->GetContext());
 
     switch (req->reqType) {
-    case AUTHENTICATE_PEER:
-        /*
-         * Push the message onto a queue of messages to be encrypted and forwarded in order when
-         * the authentication completes.
-         */
-        lock.Lock(MUTEX_CONTEXT);
-        msgsPendingAuth.push_back(req->msg);
-        lock.Unlock(MUTEX_CONTEXT);
-        /*
-         * Pause timeouts so reply handlers don't expire while waiting for authentication to complete
-         */
-        if (req->msg->GetType() == MESSAGE_METHOD_CALL) {
-            bus->GetInternal().GetLocalEndpoint()->PauseReplyHandlerTimeout(req->msg);
-        }
-        status = AuthenticatePeer(req->msg->GetType(), req->msg->GetDestination(), false);
-        if (status != ER_WOULDBLOCK) {
-            PeerStateTable* peerStateTable = bus->GetInternal().GetPeerStateTable();
+        case AUTHENTICATE_PEER:
             /*
-             * Check each message that is queued waiting for an authentication to complete
-             * to see if this is the authentication the message was waiting for.
+             * Push the message onto a queue of messages to be encrypted and forwarded in order when
+             * the authentication completes.
              */
             lock.Lock(MUTEX_CONTEXT);
-            std::deque<Message>::iterator iter = msgsPendingAuth.begin();
-            while (iter != msgsPendingAuth.end()) {
-                Message msg = *iter;
-                if (peerStateTable->IsAlias(msg->GetDestination(), req->msg->GetDestination())) {
-                    LocalEndpoint lep =  bus->GetInternal().GetLocalEndpoint();
-                    if (status != ER_OK) {
-                        /*
-                         * If the failed message was a method call push an error response.
-                         */
-                        if (req->msg->GetType() == MESSAGE_METHOD_CALL) {
-                            Message reply(*bus);
-                            reply->ErrorMsg(status, req->msg->GetCallSerial());
-                            bus->GetInternal().GetLocalEndpoint()->PushMessage(reply);
-                        }
-                    } else {
-                        if (msg->GetType() == MESSAGE_METHOD_CALL) {
-                            bus->GetInternal().GetLocalEndpoint()->ResumeReplyHandlerTimeout(msg);
-                        }
-                        BusEndpoint busEndpoint = BusEndpoint::cast(bus->GetInternal().GetLocalEndpoint());
-                        bus->GetInternal().GetRouter().PushMessage(msg, busEndpoint);
-                    }
-                    iter = msgsPendingAuth.erase(iter);
-                } else {
-                    iter++;
-                }
-            }
+            msgsPendingAuth.push_back(req->msg);
             lock.Unlock(MUTEX_CONTEXT);
             /*
-             * Report a single error for the message the triggered the authentication
+             * Pause timeouts so reply handlers don't expire while waiting for authentication to complete
              */
+            if (req->msg->GetType() == MESSAGE_METHOD_CALL) {
+                bus->GetInternal().GetLocalEndpoint()->PauseReplyHandlerTimeout(req->msg);
+            }
+            status = AuthenticatePeer(req->msg->GetType(), req->msg->GetDestination(), false);
+            if (status != ER_WOULDBLOCK) {
+                PeerStateTable* peerStateTable = bus->GetInternal().GetPeerStateTable();
+                /*
+                 * Check each message that is queued waiting for an authentication to complete
+                 * to see if this is the authentication the message was waiting for.
+                 */
+                lock.Lock(MUTEX_CONTEXT);
+                std::deque<Message>::iterator iter = msgsPendingAuth.begin();
+                while (iter != msgsPendingAuth.end()) {
+                    Message msg = *iter;
+                    if (peerStateTable->IsAlias(msg->GetDestination(), req->msg->GetDestination())) {
+                        LocalEndpoint lep =  bus->GetInternal().GetLocalEndpoint();
+                        if (status != ER_OK) {
+                            /*
+                             * If the failed message was a method call push an error response.
+                             */
+                            if (req->msg->GetType() == MESSAGE_METHOD_CALL) {
+                                Message reply(*bus);
+                                reply->ErrorMsg(status, req->msg->GetCallSerial());
+                                bus->GetInternal().GetLocalEndpoint()->PushMessage(reply);
+                            }
+                        } else {
+                            if (msg->GetType() == MESSAGE_METHOD_CALL) {
+                                bus->GetInternal().GetLocalEndpoint()->ResumeReplyHandlerTimeout(msg);
+                            }
+                            BusEndpoint busEndpoint = BusEndpoint::cast(bus->GetInternal().GetLocalEndpoint());
+                            bus->GetInternal().GetRouter().PushMessage(msg, busEndpoint);
+                        }
+                        iter = msgsPendingAuth.erase(iter);
+                    } else {
+                        iter++;
+                    }
+                }
+                lock.Unlock(MUTEX_CONTEXT);
+                /*
+                 * Report a single error for the message the triggered the authentication
+                 */
+                if (status != ER_OK) {
+                    peerAuthListener.SecurityViolation(status, req->msg);
+                }
+            }
+            break;
+
+        case AUTH_CHALLENGE:
+            AuthAdvance(req->msg);
+            break;
+
+        case EXPAND_HEADER:
+            ExpandHeader(req->msg, req->data);
+            break;
+
+        case SECURE_CONNECTION:
+            status = AuthenticatePeer(MESSAGE_METHOD_CALL, req->data, true);
             if (status != ER_OK) {
                 peerAuthListener.SecurityViolation(status, req->msg);
             }
-        }
-        break;
-
-    case AUTH_CHALLENGE:
-        AuthAdvance(req->msg);
-        break;
-
-    case EXPAND_HEADER:
-        ExpandHeader(req->msg, req->data);
-        break;
-
-    case SECURE_CONNECTION:
-        status = AuthenticatePeer(MESSAGE_METHOD_CALL, req->data, true);
-        if (status != ER_OK) {
-            peerAuthListener.SecurityViolation(status, req->msg);
-        }
-        break;
+            break;
     }
 
     delete req;

@@ -90,7 +90,8 @@ QStatus org::alljoyn::CreateInterfaces(BusAttachment& bus)
 
         ifc->AddSignal("FoundAdvertisedName",      "sqs",              "name,transport,prefix",                        0);
         ifc->AddSignal("LostAdvertisedName",       "sqs",              "name,transport,prefix",                        0);
-        ifc->AddSignal("SessionLost",              "u",                "sessionId",                                    0);
+        ifc->AddSignal("SessionLost",              "u",               "sessionId",                                     0);
+        ifc->AddSignal("SessionLostWithReason",    "uu",               "sessionId,reason",                             0);
         ifc->AddSignal("MPSessionChanged",         "usb",              "sessionId,name,isAdded",                       0);
 
         ifc->Activate();

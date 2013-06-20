@@ -485,6 +485,7 @@ class AllJoynObj : public BusObject, public NameListener, public TransportListen
     const InterfaceDescription::Member* foundNameSignal;   /**< org.alljoyn.Bus.FoundName signal */
     const InterfaceDescription::Member* lostAdvNameSignal; /**< org.alljoyn.Bus.LostAdvertisdName signal */
     const InterfaceDescription::Member* sessionLostSignal; /**< org.alljoyn.Bus.SessionLost signal */
+    const InterfaceDescription::Member* sessionLostWithReasonSignal; /**< org.alljoyn.Bus.SessionLostWithReason signal */
     const InterfaceDescription::Member* mpSessionChangedSignal;  /**< org.alljoyn.Bus.MPSessionChanged signal */
     const InterfaceDescription::Member* mpSessionJoinedSignal;  /**< org.alljoyn.Bus.JoinSession signal */
 
@@ -711,8 +712,9 @@ class AllJoynObj : public BusObject, public NameListener, public TransportListen
      * Utility method used to send SessionLost signal to locally attached endpoint.
      *
      * @param       entry    SessionMapEntry that was lost.
+     * @param       reason   Reason for the SessionLost.
      */
-    void SendSessionLost(const SessionMapEntry& entry);
+    void SendSessionLost(const SessionMapEntry& entry, QStatus reason);
 
     /**
      * Utility method used to send MPSessionChanged signal to locally attached endpoint.

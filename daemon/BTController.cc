@@ -997,7 +997,7 @@ void BTController::SessionJoined(SessionPort sessionPort, SessionId id, const ch
 }
 
 
-void BTController::SessionLost(SessionId id)
+void BTController::SessionLost(SessionId id, SessionLostReason reason)
 {
     QCC_DbgPrintf(("BTController::SessionLost(id = %x)", id));
     nodeDB.NodeSessionLost(id);

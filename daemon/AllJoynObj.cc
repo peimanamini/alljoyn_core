@@ -152,6 +152,7 @@ QStatus AllJoynObj::Init()
     foundNameSignal = alljoynIntf->GetMember("FoundAdvertisedName");
     lostAdvNameSignal = alljoynIntf->GetMember("LostAdvertisedName");
     sessionLostSignal = alljoynIntf->GetMember("SessionLost");
+    sessionLostWithReasonSignal = alljoynIntf->GetMember("SessionLostWithReason");
     mpSessionChangedSignal = alljoynIntf->GetMember("MPSessionChanged");
 
     const InterfaceDescription* busSessionIntf = bus.GetInterface(org::alljoyn::Bus::Peer::Session::InterfaceName);
@@ -1750,6 +1751,8 @@ void AllJoynObj::RemoveSessionRefs(const char* epName, SessionId id, bool sendSe
     vector<pair<String, SessionId> > changedSessionMembers;
     vector<SessionMapEntry> sessionsLost;
     vector<String> epChangedSessionMembers;
+    SessionMapEntry smeRemoved;
+    bool foundSME = false;
 
     SessionMapType::iterator it = sessionMap.begin();
     /* Look through sessionMap for entries matching id */
@@ -1759,21 +1762,20 @@ void AllJoynObj::RemoveSessionRefs(const char* epName, SessionId id, bool sendSe
                 /* Exact key matches are removed */
 
                 if (sendSessionLost) {
-                    SessionMapEntry tsme = it->second;
+                    smeRemoved = it->second;
                     pair<String, SessionId> key = it->first;
 
-                    epChangedSessionMembers.push_back(tsme.sessionHost);
-                    vector<String>::iterator mit = tsme.memberNames.begin();
-                    while (mit != tsme.memberNames.end()) {
+                    epChangedSessionMembers.push_back(smeRemoved.sessionHost);
+                    vector<String>::iterator mit = smeRemoved.memberNames.begin();
+                    while (mit != smeRemoved.memberNames.end()) {
                         if (epNameStr != *mit) {
                             epChangedSessionMembers.push_back(*mit++);
                         } else {
                             ++mit;
                         }
                     }
-
                     sessionMap.erase(it++);
-                    sessionsLost.push_back(tsme);
+                    foundSME = true;
                 } else {
                     sessionMap.erase(it++);
                 }
@@ -1833,7 +1835,10 @@ void AllJoynObj::RemoveSessionRefs(const char* epName, SessionId id, bool sendSe
     /* Send session lost signals */
     vector<SessionMapEntry>::iterator slit = sessionsLost.begin();
     while (slit != sessionsLost.end()) {
-        SendSessionLost(*slit++);
+        SendSessionLost(*slit++, ER_OK);
+    }
+    if (foundSME && sendSessionLost) {
+        SendSessionLost(smeRemoved, ER_BUS_REMOVED_BY_BINDER);
     }
 }
 
@@ -1845,6 +1850,7 @@ void AllJoynObj::RemoveSessionRefs(const String& vepName, const String& b2bEpNam
     RemoteEndpoint b2bEp;
 
     AcquireLocks();
+    QStatus disconnectReason = b2bEp->GetDisconnectStatus();
 
     if (!router.FindEndpoint(vepName, vep)) {
         QCC_LogError(ER_FAIL, ("Virtual endpoint %s disappeared during RemoveSessionRefs", vepName.c_str()));
@@ -1923,7 +1929,7 @@ void AllJoynObj::RemoveSessionRefs(const String& vepName, const String& b2bEpNam
     /* Send session lost signals */
     vector<SessionMapEntry>::iterator slit = sessionsLost.begin();
     while (slit != sessionsLost.end()) {
-        SendSessionLost(*slit++);
+        SendSessionLost(*slit++, disconnectReason);
     }
 }
 
@@ -2116,17 +2122,62 @@ QStatus AllJoynObj::SendAcceptSession(SessionPort sessionPort,
     return status;
 }
 
-void AllJoynObj::SendSessionLost(const SessionMapEntry& sme)
+void AllJoynObj::SendSessionLost(const SessionMapEntry& sme, QStatus reason)
 {
     /* Send SessionLost to the endpoint mentioned in sme */
     Message sigMsg(bus);
-    MsgArg args[1];
-    args[0].Set("u", sme.id);
-    QCC_DbgPrintf(("Sending SessionLost(%u) to %s", sme.id, sme.endpointName.c_str()));
-    QStatus status = Signal(sme.endpointName.c_str(), sme.id, *sessionLostSignal, args, ArraySize(args));
 
-    if (ER_OK != status) {
-        QCC_LogError(status, ("Failed to send SessionLost to %s", sme.endpointName.c_str()));
+    AcquireLocks();
+    BusEndpoint ep = router.FindEndpoint(sme.endpointName);
+
+
+    if (ep->GetEndpointType() == ENDPOINT_TYPE_REMOTE && RemoteEndpoint::cast(ep)->GetRemoteProtocolVersion() < 7) {
+        ReleaseLocks();
+        /* For older clients i.e. protocol version < 7, emit SessionLost(u) signal */
+        MsgArg args[1];
+        args[0].Set("u", sme.id);
+        QCC_DbgPrintf(("Sending SessionLost(%u) to %s", sme.id, sme.endpointName.c_str()));
+        QStatus status = Signal(sme.endpointName.c_str(), sme.id, *sessionLostSignal, args, ArraySize(args));
+        if (ER_OK != status) {
+            QCC_LogError(status, ("Failed to send SessionLost(%d) to %s", sme.id, sme.endpointName.c_str()));
+        }
+    } else {
+        ReleaseLocks();
+        /* For newer clients i.e. protocol version >= 7, emit SessionLostWithReason(uu) signal */
+        MsgArg args[2];
+        args[0].Set("u", sme.id);
+        SessionListener::SessionLostReason replyCode;
+        switch (reason) {
+        case ER_OK:
+            replyCode = SessionListener::ALLJOYN_SESSIONLOST_REMOTE_END_LEFT_SESSION;
+            break;
+
+        case ER_SOCK_OTHER_END_CLOSED:
+        case ER_BUS_ENDPOINT_CLOSING:
+            replyCode = SessionListener::ALLJOYN_SESSIONLOST_REMOTE_END_CLOSED_ABRUPTLY;
+            break;
+
+        case ER_BUS_REMOVED_BY_BINDER:
+            replyCode = SessionListener::ALLJOYN_SESSIONLOST_REMOVED_BY_BINDER;
+            break;
+
+        case ER_TIMEOUT:
+            replyCode = SessionListener::ALLJOYN_SESSIONLOST_LINK_TIMEOUT;
+            break;
+
+        default:
+            replyCode = SessionListener::ALLJOYN_SESSIONLOST_REASON_OTHER;
+            break;
+        }
+
+        args[1].Set("u", replyCode);
+        QCC_DbgPrintf(("Sending sessionLostWithReason(%u, %s) to %s", sme.id, QCC_StatusText(reason), sme.endpointName.c_str()));
+
+        QStatus status = Signal(sme.endpointName.c_str(), sme.id, *sessionLostWithReasonSignal, args, ArraySize(args));
+
+        if (ER_OK != status) {
+            QCC_LogError(status, ("Failed to send sessionLostWithReason(%u, %s) to %s", sme.id, QCC_StatusText(reason), sme.endpointName.c_str()));
+        }
     }
 }
 
@@ -3537,7 +3588,7 @@ void AllJoynObj::NameOwnerChanged(const qcc::String& alias, const qcc::String* o
         /* Send session lost signals */
         vector<SessionMapEntry>::iterator slit = sessionsLost.begin();
         while (slit != sessionsLost.end()) {
-            SendSessionLost(*slit++);
+            SendSessionLost(*slit++, ER_BUS_ENDPOINT_CLOSING);
         }
     }
 

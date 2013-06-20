@@ -103,7 +103,7 @@ SessionId bindMemberSessionId = 0;
 
 class BindMemberSessionListenerA : public SessionListener {
   public:
-    //virtual void SessionLost(SessionId sessionId) { }
+    //virtual void SessionLost(SessionId sessionId, SessionLostReason reason) { }
     virtual void SessionMemberAdded(SessionId sessionId, const char* uniqueName) {
         sessionMemberAddedFlagA = true;
     }
@@ -114,7 +114,7 @@ class BindMemberSessionListenerA : public SessionListener {
 
 class BindMemberSessionListenerB : public SessionListener {
   public:
-    //virtual void SessionLost(SessionId sessionId) { }
+    //virtual void SessionLost(SessionId sessionId, SessionLostReason reason) { }
     virtual void SessionMemberAdded(SessionId sessionId, const char* uniqueName) {
         sessionMemberAddedFlagB = true;
     }
@@ -125,7 +125,7 @@ class BindMemberSessionListenerB : public SessionListener {
 
 class BindMemberSessionListenerC : public SessionListener {
   public:
-    //virtual void SessionLost(SessionId sessionId) { }
+    //virtual void SessionLost(SessionId sessionId, SessionLostReason reason) { }
     virtual void SessionMemberAdded(SessionId sessionId, const char* uniqueName) {
         sessionMemberAddedFlagC = true;
     }

@@ -312,8 +312,8 @@ class MyBusListener : public SessionPortListener, public SessionListener {
         }
     }
 
-    void SessionLost(SessionId sessionId) {
-        QCC_SyncPrintf("SessionLost(%08x) was called\n", sessionId);
+    void SessionLost(SessionId sessionId, SessionLostReason reason) {
+        QCC_SyncPrintf("SessionLost(%08x) was called. Reason = %u.\n", sessionId, reason);
 
         /* Enable concurrent callbacks since some of the calls below could block */
         g_msgBus->EnableConcurrentCallbacks();

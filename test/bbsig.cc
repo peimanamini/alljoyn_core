@@ -124,8 +124,8 @@ class MyBusListener : public BusListener, public SessionListener {
                        newOwner ? newOwner : "null");
     }
 
-    void SessionLost(SessionId sessionId) {
-        QCC_SyncPrintf("SessionLost(%u) was called\n", sessionId);
+    void SessionLost(SessionId sessionId, SessionLostReason reason) {
+        QCC_SyncPrintf("SessionLost(%u) was called. Reason = %u.\n", sessionId, reason);
     }
 
     SessionId GetSessionId() const { return sessionId; }

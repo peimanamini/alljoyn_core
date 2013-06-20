@@ -247,17 +247,17 @@ class MyBusListener : public BusListener, public SessionPortListener, public Ses
         }
     }
 
-    void SessionLost(SessionId id)
+    void SessionLost(SessionId id, SessionLostReason reason)
     {
         s_lock.Lock(MUTEX_CONTEXT);
         map<SessionId, SessionInfo>::iterator it = s_sessionMap.find(id);
         if (it != s_sessionMap.end()) {
             s_sessionMap.erase(it);
             s_lock.Unlock(MUTEX_CONTEXT);
-            printf("Session %u is lost\n", id);
+            printf("Session %u is lost. Reason=%u\n", id, reason);
         } else {
             s_lock.Unlock(MUTEX_CONTEXT);
-            printf("SessionLost for unknown sessionId %u\n", id);
+            printf("SessionLost for unknown sessionId %u. Reason=%u\n", id, reason);
         }
     }
 

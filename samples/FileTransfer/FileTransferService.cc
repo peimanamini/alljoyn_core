@@ -223,7 +223,7 @@ class MyBusListener : public BusListener, public SessionListener, public Session
     }
 
     // Called by the bus when an existing session becomes disconnected.
-    void SessionLost(SessionId sessionId)
+    void SessionLost(SessionId sessionId, SessionLostReason reason)
     {
     }
 

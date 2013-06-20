@@ -170,11 +170,11 @@ QStatus SessionlessObj::Init()
         QCC_LogError(status, ("Failed to register FoundAdvertisedName signal handler"));
     }
 
-    /* Register signal handler for SessionLost */
+    /* Register signal handler for SessionLostWithReason */
     /* (If we werent in the daemon, we could just use SessionListener, but it doesnt work without the full BusAttachment implementation */
     status = bus.RegisterSignalHandler(this,
                                        static_cast<MessageReceiver::SignalHandler>(&SessionlessObj::SessionLostSignalHandler),
-                                       ajIntf->GetMember("SessionLost"),
+                                       ajIntf->GetMember("SessionLostWithReason"),
                                        NULL);
     if (status != ER_OK) {
         QCC_LogError(status, ("Failed to register SessionLost signal handler"));
@@ -615,7 +615,8 @@ void SessionlessObj::SessionLostSignalHandler(const InterfaceDescription::Member
                                               Message& msg)
 {
     uint32_t sessionId = 0;
-    msg->GetArgs("u", &sessionId);
+    uint32_t reason = 0;
+    msg->GetArgs("uu", &sessionId, &reason);
     QCC_DbgTrace(("SessionlessObj::SessionLostSignalHandler(0x%x)", sessionId));
     DoSessionLost(sessionId);
 }

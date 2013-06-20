@@ -463,7 +463,7 @@ QStatus BusAttachment::Connect(const char* connectSpec)
                 assert(ajIface);
                 status = RegisterSignalHandler(busInternal,
                                                static_cast<MessageReceiver::SignalHandler>(&BusAttachment::Internal::AllJoynSignalHandler),
-                                               ajIface->GetMember("SessionLost"),
+                                               ajIface->GetMember("SessionLostWithReason"),
                                                NULL);
             }
             if (ER_OK == status) {
@@ -554,7 +554,7 @@ QStatus BusAttachment::Disconnect(const char* connectSpec)
             if (alljoynIface) {
                 UnregisterSignalHandler(busInternal,
                                         static_cast<MessageReceiver::SignalHandler>(&BusAttachment::Internal::AllJoynSignalHandler),
-                                        alljoynIface->GetMember("SessionLost"),
+                                        alljoynIface->GetMember("SessionLostWithReason"),
                                         NULL);
             }
             if (alljoynIface) {
@@ -1921,14 +1921,17 @@ void BusAttachment::Internal::AllJoynSignalHandler(const InterfaceDescription::M
                 it = listeners.upper_bound(pl);
             }
             listenersLock.Unlock(MUTEX_CONTEXT);
-        } else if (0 == strcmp("SessionLost", msg->GetMemberName())) {
+        } else if (0 == strcmp("SessionLostWithReason", msg->GetMemberName())) {
             sessionListenersLock.Lock(MUTEX_CONTEXT);
             SessionId id = static_cast<SessionId>(args[0].v_uint32);
+            SessionListener::SessionLostReason reason = static_cast<SessionListener::SessionLostReason>(args[1].v_uint32);
             SessionListenerMap::iterator slit = sessionListeners.find(id);
             if (slit != sessionListeners.end()) {
                 ProtectedSessionListener pl = slit->second;
                 sessionListenersLock.Unlock(MUTEX_CONTEXT);
                 if (*pl) {
+                    (*pl)->SessionLost(id, reason);
+                    /* For backward compatibility, call the older version of SessionLost too */
                     (*pl)->SessionLost(id);
                 }
                 /* Automatically remove session listener upon sessionLost */

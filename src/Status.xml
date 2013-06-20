@@ -249,4 +249,5 @@ Copyright 2010 - 2012, Qualcomm Innovation Center, Inc.
   <status name="ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_FOUND" value="0x90f2" comment="RemoveSessionMember reply: Specified session member was not found"/>
   <status name="ER_ALLJOYN_REMOVESESSIONMEMBER_INCOMPATIBLE_REMOTE_DAEMON" value="0x90f3" comment="RemoveSessionMember reply: The remote daemon does not support this feature"/>
   <status name="ER_ALLJOYN_REMOVESESSIONMEMBER_REPLY_FAILED" value="0x90f4" comment="RemoveSessionMember reply: Failed for unspecified reason"/>
+  <status name="ER_BUS_REMOVED_BY_BINDER" value="0x90f5" comment="The session member was removed by the binder"/>
 </status_block>

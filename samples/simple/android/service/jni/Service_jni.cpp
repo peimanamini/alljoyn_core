@@ -92,9 +92,9 @@ class MyBusListener : public BusListener, public SessionPortListener, public Ses
         _id = id;
     }
 
-    void SessionLost(SessionId id)
+    void SessionLost(SessionId id, SessionLostReason reason)
     {
-        LOGD("SessionLost (id=%u)\n", id);
+        LOGD("SessionLost (id=%u). Reason = %u.\n", id, reason);
         _id = 0;
     }
 

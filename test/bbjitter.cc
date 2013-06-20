@@ -278,9 +278,9 @@ class MyBusListener : public BusListener, public SessionPortListener, public Ses
                        newOwner ? newOwner : "null");
     }
 
-    void SessionLost(SessionId sessid)
+    void SessionLost(SessionId sessid, SessionLostReason reason)
     {
-        QCC_SyncPrintf("Session Lost  %u\n", sessid);
+        QCC_SyncPrintf("Session Lost  %u. Reason=%u.\n", sessid, reason);
     }
 
     ~MyBusListener()

@@ -369,7 +369,7 @@ class BTController :
      *
      * @param sessionId     Id of session that was lost.
      */
-    void SessionLost(SessionId id);
+    void SessionLost(SessionId id, SessionLostReason reason);
 
     /**
      * Called when JoinSessionAsync() completes.

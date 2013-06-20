@@ -119,9 +119,9 @@ class MyBusListener : public BusListener, public SessionPortListener, public Ses
         LOGD("\n NameOwnerchaged received ... busName = %s .... previousOwner = %s, newOwner = %s", busName, previousOwner, newOwner);
     }
 
-    void SessionLost(SessionId sessionId)
+    void SessionLost(SessionId sessionId, SessionLostReason reason)
     {
-        LOGD("SessionLost(%u) received", sessionId);
+        LOGD("SessionLost(%u) received. Reason = %u.", sessionId, reason);
 
         /* Inform Java GUI of this disconnect */
         JNIEnv* env;
@@ -131,11 +131,11 @@ class MyBusListener : public BusListener, public SessionPortListener, public Ses
         }
 
         jclass jcls = env->GetObjectClass(jobj);
-        jmethodID mid = env->GetMethodID(jcls, "DisconnectCallback", "(I)V");
+        jmethodID mid = env->GetMethodID(jcls, "DisconnectCallback", "(II)V");
         if (mid == 0) {
             LOGE("Failed to get Java DisconnectCallback");
         } else {
-            env->CallVoidMethod(jobj, mid, jint(sessionId));
+            env->CallVoidMethod(jobj, mid, jint(sessionId), jint(reason));
         }
 
         if (JNI_EDETACHED == jret) {

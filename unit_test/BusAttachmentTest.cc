@@ -403,8 +403,10 @@ bool onJoined = false;
 QStatus joinSessionStatus = ER_FAIL;
 int busSessionId = 0;
 int otherBusSessionId = 0;
+bool sessionLost = false;
+SessionListener::SessionLostReason sessionLostReason = SessionListener::ALLJOYN_SESSIONLOST_INVALID;
 
-class JoinSession_SessionPortListener : public SessionPortListener {
+class JoinSession_SessionPortListener : public SessionPortListener, SessionListener {
   public:
     JoinSession_SessionPortListener(BusAttachment* bus) : bus(bus) { };
 
@@ -419,6 +421,10 @@ class JoinSession_SessionPortListener : public SessionPortListener {
         }
     }
 
+    void SessionLost(SessionId id, SessionListener::SessionLostReason reason) {
+        sessionLostReason = reason;
+        sessionLost = true;
+    }
     void SessionJoined(SessionPort sessionPort, SessionId id, const char* joiner) {
         if (sessionPort == 42) {
             busSessionId = id;
@@ -426,6 +432,7 @@ class JoinSession_SessionPortListener : public SessionPortListener {
         } else {
             sessionJoined = false;
         }
+        bus->SetSessionListener(id, this);
     }
     BusAttachment* bus;
 };
@@ -449,7 +456,7 @@ class JoinSession_BusListener : public BusListener {
     BusAttachment* bus;
 };
 
-TEST_F(BusAttachmentTest, JoinSession) {
+TEST_F(BusAttachmentTest, JoinLeaveSession) {
     QStatus status = ER_FAIL;
 
     // Initialize test specific globals
@@ -459,6 +466,8 @@ TEST_F(BusAttachmentTest, JoinSession) {
     joinSessionStatus = ER_FAIL;
     busSessionId = 0;
     otherBusSessionId = 0;
+    sessionLost = false;
+    sessionLostReason = SessionListener::ALLJOYN_SESSIONLOST_INVALID;
 
     // Set up SessionOpts
     SessionOpts sessionOpts(SessionOpts::TRAFFIC_MESSAGES, false, SessionOpts::PROXIMITY_ANY, TRANSPORT_ANY);
@@ -515,6 +524,19 @@ TEST_F(BusAttachmentTest, JoinSession) {
     EXPECT_TRUE(sessionAccepted);
     EXPECT_TRUE(sessionJoined);
     EXPECT_EQ(busSessionId, otherBusSessionId);
+
+    sessionLost = false;
+
+    status = otherBus.LeaveSession(otherBusSessionId);
+    for (size_t i = 0; i < 200; ++i) {
+        if (sessionLost) {
+            break;
+        }
+        qcc::Sleep(5);
+    }
+    EXPECT_TRUE(sessionLost);
+    EXPECT_EQ(SessionListener::ALLJOYN_SESSIONLOST_REMOTE_END_LEFT_SESSION, sessionLostReason);
+
 }
 
 TEST_F(BusAttachmentTest, GetDBusProxyObj) {

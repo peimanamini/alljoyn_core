@@ -155,6 +155,11 @@ class _BusEndpoint : public MessageSink {
     bool SurpriseDisconnect() const { return disconnectStatus != ER_OK; }
 
     /**
+     * Return true if the endpoint was disconnected due to an error rather than a clean shutdown.
+     */
+    QStatus GetDisconnectStatus() const { return disconnectStatus; }
+
+    /**
      * Bus endpoints are only equal if they are the same object
      */
     bool operator ==(const _BusEndpoint& other) const { return this == &other; }

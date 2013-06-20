@@ -204,9 +204,9 @@ public class Client extends Activity {
         }
     }
 
-    public void DisconnectCallback(int sessionId)
+    public void DisconnectCallback(int sessionId, int reason)
     {
-        Log.e("SimpleClient", String.format("Disconnect session %d", sessionId));
+        Log.e("SimpleClient", String.format("Disconnect session %d. Reason = %d.", sessionId,reason));
         for (int i = 0; i < busNameItemAdapter.getCount(); ++i) {
             BusNameItem item = busNameItemAdapter.getItem(i);
             Log.e("SimpleClient", String.format("item.id=%d, sessionId=%d", item.getSessionId(), sessionId));

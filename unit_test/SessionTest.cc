@@ -377,5 +377,127 @@ TEST_F(SessionTest, SessionJoined) {
     EXPECT_STREQ(busB.GetUniqueName().c_str(), sessionJoinedTestJoiner.c_str()) <<
     "The Joiner name " << sessionJoinedTestJoiner.c_str() <<
     " should be the same as " << busB.GetUniqueName().c_str();;
+
+    status = busA.RemoveSessionMember(sessionId, busB.GetUniqueName());
+    EXPECT_EQ(ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_MULTIPOINT, status) << "  Actual Status: " << QCC_StatusText(status);
 }
 
+bool sessionLostFlagA;
+bool sessionLostFlagB;
+class RemoveSessionMemberBusAListener : public SessionPortListener, public SessionListener {
+  public:
+    RemoveSessionMemberBusAListener(BusAttachment* bus) : bus(bus) { }
+
+    virtual bool AcceptSessionJoiner(SessionPort sessionPort, const char* joiner, const SessionOpts& opts) {
+        printf("AcceptSessionJoiner sessionPort = %d, joiner = %s\n", sessionPort, joiner);
+        return true;
+    }
+    virtual void SessionJoined(SessionPort sessionPort, SessionId id, const char* joiner) {
+        printf("SessionJoined sessionPort = %d, SessionId=%d, joiner = %s\n", sessionPort, id, joiner);
+        bindMemberSessionId = id;
+        sessionJoinedTestJoiner = joiner;
+        sessionJoinedFlag = true;
+        bus->SetSessionListener(id, this);
+    }
+    virtual void SessionLost(SessionId sessionId) {
+        sessionLostFlagA = true;
+    }
+    virtual void SessionMemberAdded(SessionId sessionId, const char* uniqueName) {
+        sessionMemberAddedFlagA = true;
+    }
+    virtual void SessionMemberRemoved(SessionId sessionId, const char* uniqueName) {
+        sessionMemberRemovedFlagA = true;
+    }
+    BusAttachment* bus;
+};
+class RemoveSessionMemberBusBListener : public SessionListener {
+
+    virtual void SessionLost(SessionId sessionId) {
+        sessionLostFlagB = true;
+    }
+    virtual void SessionMemberAdded(SessionId sessionId, const char* uniqueName) {
+        sessionMemberAddedFlagB = true;
+    }
+    virtual void SessionMemberRemoved(SessionId sessionId, const char* uniqueName) {
+        sessionMemberRemovedFlagB = true;
+    }
+};
+
+TEST_F(SessionTest, RemoveSessionMember) {
+    QStatus status = ER_FAIL;
+    /* make sure global flags are initialized */
+    sessionJoinedFlag = false;
+    sessionLostFlagA = false;
+    sessionMemberAddedFlagA = false;
+    sessionMemberRemovedFlagA = false;
+    sessionLostFlagB = false;
+    sessionMemberAddedFlagB = false;
+    sessionMemberRemovedFlagB = false;
+
+    BusAttachment busA("bus.Aa", false);
+    BusAttachment busB("bus.Bb", false);
+
+    status = busA.Start();
+    EXPECT_EQ(ER_OK, status) << "  Actual Status: " << QCC_StatusText(status);
+    status = busA.Connect(getConnectArg().c_str());
+    EXPECT_EQ(ER_OK, status) << "  Actual Status: " << QCC_StatusText(status);
+
+    status = busB.Start();
+    EXPECT_EQ(ER_OK, status) << "  Actual Status: " << QCC_StatusText(status);
+    status = busB.Connect(getConnectArg().c_str());
+    EXPECT_EQ(ER_OK, status) << "  Actual Status: " << QCC_StatusText(status);
+
+    /* Multi-point session */
+    SessionOpts opts(SessionOpts::TRAFFIC_MESSAGES, true, SessionOpts::PROXIMITY_ANY, TRANSPORT_ANY);
+
+    RemoveSessionMemberBusAListener sessionPortListener(&busA);
+    SessionPort port = 1;
+
+    status = busA.BindSessionPort(port, opts, sessionPortListener);
+    EXPECT_EQ(ER_OK, status) << "  Actual Status: " << QCC_StatusText(status);
+
+    RemoveSessionMemberBusBListener sessionListener;
+    SessionId sessionId;
+
+    status = busB.JoinSession(busA.GetUniqueName().c_str(), port, &sessionListener, sessionId, opts);
+    EXPECT_EQ(ER_OK, status) << "  Actual Status: " << QCC_StatusText(status);
+
+    EXPECT_TRUE(sessionJoinerAcceptedFlag);
+    //Wait upto 3 seconds all callbacks and listeners to be called.
+    for (int i = 0; i < 300; ++i) {
+        if (sessionJoinedFlag && sessionMemberAddedFlagA && sessionMemberAddedFlagB) {
+            break;
+        }
+        qcc::Sleep(10);
+    }
+
+    EXPECT_TRUE(sessionJoinedFlag);
+    EXPECT_TRUE(sessionMemberAddedFlagA);
+    EXPECT_TRUE(sessionMemberAddedFlagB);
+
+    status = busB.RemoveSessionMember(sessionId, busA.GetUniqueName());
+    EXPECT_EQ(ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_BINDER, status) << "  Actual Status: " << QCC_StatusText(status);
+
+    status = busA.RemoveSessionMember(sessionId, busA.GetUniqueName());
+    EXPECT_EQ(ER_ALLJOYN_REMOVESESSIONMEMBER_REPLY_FAILED, status) << "  Actual Status: " << QCC_StatusText(status);
+
+    status = busA.RemoveSessionMember(sessionId, ":Invalid");
+    EXPECT_EQ(ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_FOUND, status) << "  Actual Status: " << QCC_StatusText(status);
+
+    status = busA.RemoveSessionMember(sessionId, busB.GetUniqueName());
+    EXPECT_EQ(ER_OK, status) << "  Actual Status: " << QCC_StatusText(status);
+
+    //Wait upto 2 seconds all callbacks and listeners to be called.
+    for (int i = 0; i < 200; ++i) {
+        if (sessionLostFlagA && sessionLostFlagB && sessionMemberRemovedFlagA && sessionMemberRemovedFlagB) {
+            break;
+        }
+        qcc::Sleep(10);
+    }
+
+    EXPECT_TRUE(sessionLostFlagA);
+    EXPECT_TRUE(sessionLostFlagB);
+    EXPECT_TRUE(sessionMemberRemovedFlagA);
+    EXPECT_TRUE(sessionMemberRemovedFlagB);
+
+}

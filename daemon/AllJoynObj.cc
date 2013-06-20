@@ -139,7 +139,8 @@ QStatus AllJoynObj::Init()
         { alljoynIntf->GetMember("AliasUnixUser"),            static_cast<MessageReceiver::MethodHandler>(&AllJoynObj::AliasUnixUser) },
         { alljoynIntf->GetMember("OnAppSuspend"),             static_cast<MessageReceiver::MethodHandler>(&AllJoynObj::OnAppSuspend) },
         { alljoynIntf->GetMember("OnAppResume"),              static_cast<MessageReceiver::MethodHandler>(&AllJoynObj::OnAppResume) },
-        { alljoynIntf->GetMember("CancelSessionlessMessage"), static_cast<MessageReceiver::MethodHandler>(&AllJoynObj::CancelSessionlessMessage) }
+        { alljoynIntf->GetMember("CancelSessionlessMessage"), static_cast<MessageReceiver::MethodHandler>(&AllJoynObj::CancelSessionlessMessage) },
+        { alljoynIntf->GetMember("RemoveSessionMember"), static_cast<MessageReceiver::MethodHandler>(&AllJoynObj::RemoveSessionMember) }
     };
 
     AddInterface(*alljoynIntf);
@@ -1161,8 +1162,8 @@ void AllJoynObj::LeaveSession(const InterfaceDescription::Member* member, Messag
         /* Locks must be released before calling RemoveSessionRefs since that method calls out to user (SessionLost) */
         ReleaseLocks();
 
-        /* Remove entries from sessionMap */
-        RemoveSessionRefs(msg->GetSender(), id);
+        /* Remove entries from sessionMap, but dont send a SessionLost back to the caller of this method. */
+        RemoveSessionRefs(msg->GetSender(), id, false);
 
         /* Remove session routes */
         router.RemoveSessionRoutes(msg->GetSender(), id);
@@ -1178,7 +1179,110 @@ void AllJoynObj::LeaveSession(const InterfaceDescription::Member* member, Messag
         QCC_LogError(status, ("Failed to respond to org.alljoyn.Bus.LeaveSession"));
     }
 }
+void AllJoynObj::RemoveSessionMember(const InterfaceDescription::Member* member, Message& msg)
+{
+    uint32_t replyCode = ALLJOYN_REMOVESESSIONMEMBER_REPLY_SUCCESS;
 
+    size_t numArgs;
+    const MsgArg* args;
+    /* Parse the message args */
+    msg->GetArgs(numArgs, args);
+    assert(numArgs == 2);
+
+    SessionId id;
+    const char* sessionMemberName;
+
+    QStatus status = MsgArg::Get(args, numArgs, "us", &id, &sessionMemberName);
+    if (status != ER_OK || (::strcmp(sessionMemberName, msg->GetSender()) == 0)) {
+        replyCode = ALLJOYN_REMOVESESSIONMEMBER_REPLY_FAILED;
+    }
+
+    QCC_DbgPrintf(("AllJoynObj::RemoveSessionMember(%u, %s)", id, sessionMemberName));
+
+    AcquireLocks();
+    if (replyCode == ALLJOYN_REMOVESESSIONMEMBER_REPLY_SUCCESS) {
+        /* Find the session with the sender and specified session id */
+        SessionMapEntry* smEntry = SessionMapFind(msg->GetSender(), id);
+        if (!smEntry || (id == 0)) {
+            replyCode = ALLJOYN_REMOVESESSIONMEMBER_REPLY_NO_SESSION;
+        } else if (!smEntry->opts.isMultipoint) {
+            replyCode = ALLJOYN_REMOVESESSIONMEMBER_NOT_MULTIPOINT;
+        } else if (smEntry->sessionHost != msg->GetSender()) {
+            replyCode = ALLJOYN_REMOVESESSIONMEMBER_NOT_BINDER;
+        } else {
+            /* Search for this member in the member names. */
+            vector<String>::iterator mit = smEntry->memberNames.begin();
+            bool found = false;
+            String srcStr = sessionMemberName;
+            while (mit != smEntry->memberNames.end()) {
+                if (*mit == srcStr) {
+                    found = true;
+                    break;
+                }
+                mit++;
+            }
+
+            if (!found) {
+                replyCode = ALLJOYN_REMOVESESSIONMEMBER_NOT_FOUND;
+            } else {
+                /* Find the virtual endpoint associated with the remote daemon
+                 * for the session member we want to remove.
+                 * If a virtual endpoint was not found, the destination is local
+                 * to this daemon.
+                 */
+                VirtualEndpoint vep;
+                router.FindEndpoint(sessionMemberName, vep);
+                if (vep->IsValid()) {
+                    RemoteEndpoint rep = vep->GetBusToBusEndpoint(id);
+                    /* Check the Remote daemon version */
+                    if (rep->GetRemoteProtocolVersion() < 7) {
+                        /* Lower versions of the daemon do not support the RemoveSessionMember
+                         * feature. So, if the remote daemon is older, then do not allow this
+                         * method call.
+                         */
+                        replyCode = ALLJOYN_REMOVESESSIONMEMBER_INCOMPATIBLE_REMOTE_DAEMON;
+                    }
+                }
+            }
+        }
+    }
+    if (replyCode == ALLJOYN_REMOVESESSIONMEMBER_REPLY_SUCCESS) {
+
+        /* Send DetachSession signal to daemons of all session participants.
+         * Send a detachSessionSignal to be sent with the
+         * member name we want to remove and the session ID to remove from. */
+        MsgArg detachSessionArgs[2];
+        detachSessionArgs[0].Set("u", id);
+        detachSessionArgs[1].Set("s", sessionMemberName);
+
+        QStatus status = Signal(NULL, 0, *detachSessionSignal, detachSessionArgs, ArraySize(detachSessionArgs), 0, ALLJOYN_FLAG_GLOBAL_BROADCAST);
+        if (status != ER_OK) {
+            QCC_LogError(status, ("Error sending org.alljoyn.Daemon.DetachSession signal"));
+        }
+
+        /* Locks must be released before calling RemoveSessionRefs since that method calls out to user (SessionLost) */
+        ReleaseLocks();
+
+        /* Remove entries from sessionMap, send a SessionLost to the session member being removed. */
+        RemoveSessionRefs(sessionMemberName, id, true);
+
+        /* Remove session routes */
+        router.RemoveSessionRoutes(sessionMemberName, id);
+
+    } else {
+        ReleaseLocks();
+    }
+
+    /* Reply to request */
+    MsgArg replyArgs[1];
+    replyArgs[0].Set("u", replyCode);
+    status = MethodReply(msg, replyArgs, ArraySize(replyArgs));
+
+    /* Log error if reply could not be sent */
+    if (ER_OK != status) {
+        QCC_LogError(status, ("Failed to respond to org.alljoyn.Bus.RemoveSessionMember"));
+    }
+}
 qcc::ThreadReturn STDCALL AllJoynObj::JoinSessionThread::RunAttach()
 {
     SessionId id = 0;
@@ -1629,9 +1733,9 @@ void AllJoynObj::SetAdvNameAlias(const String& guid, const TransportMask mask, c
     ReleaseLocks();
 }
 
-void AllJoynObj::RemoveSessionRefs(const char* epName, SessionId id)
+void AllJoynObj::RemoveSessionRefs(const char* epName, SessionId id, bool sendSessionLost)
 {
-    QCC_DbgTrace(("AllJoynObj::RemoveSessionRefs(%s, %u)", epName, id));
+    QCC_DbgTrace(("AllJoynObj::RemoveSessionRefs(%s, %u, %u)", epName, id, sendSessionLost));
 
     AcquireLocks();
 
@@ -1645,6 +1749,7 @@ void AllJoynObj::RemoveSessionRefs(const char* epName, SessionId id)
     String epNameStr = endpoint->GetUniqueName();
     vector<pair<String, SessionId> > changedSessionMembers;
     vector<SessionMapEntry> sessionsLost;
+    vector<String> epChangedSessionMembers;
 
     SessionMapType::iterator it = sessionMap.begin();
     /* Look through sessionMap for entries matching id */
@@ -1652,7 +1757,26 @@ void AllJoynObj::RemoveSessionRefs(const char* epName, SessionId id)
         if (it->first.second == id) {
             if (it->first.first == epNameStr) {
                 /* Exact key matches are removed */
-                sessionMap.erase(it++);
+
+                if (sendSessionLost) {
+                    SessionMapEntry tsme = it->second;
+                    pair<String, SessionId> key = it->first;
+
+                    epChangedSessionMembers.push_back(tsme.sessionHost);
+                    vector<String>::iterator mit = tsme.memberNames.begin();
+                    while (mit != tsme.memberNames.end()) {
+                        if (epNameStr != *mit) {
+                            epChangedSessionMembers.push_back(*mit++);
+                        } else {
+                            ++mit;
+                        }
+                    }
+
+                    sessionMap.erase(it++);
+                    sessionsLost.push_back(tsme);
+                } else {
+                    sessionMap.erase(it++);
+                }
             } else {
                 if (endpoint == router.FindEndpoint(it->second.sessionHost)) {
                     /* Modify entry to remove matching sessionHost */
@@ -1699,6 +1823,12 @@ void AllJoynObj::RemoveSessionRefs(const char* epName, SessionId id)
     while (csit != changedSessionMembers.end()) {
         SendMPSessionChanged(csit->second, epNameStr.c_str(), false, csit->first.c_str());
         csit++;
+    }
+    /* Send MPSessionChanged to the member being removed by the binder */
+    vector<String>::const_iterator csitEp = epChangedSessionMembers.begin();
+    while (csitEp != epChangedSessionMembers.end()) {
+        SendMPSessionChanged(id, (*csitEp).c_str(), false, epNameStr.c_str());
+        csitEp++;
     }
     /* Send session lost signals */
     vector<SessionMapEntry>::iterator slit = sessionsLost.begin();
@@ -2107,8 +2237,8 @@ void AllJoynObj::DetachSessionSignalHandler(const InterfaceDescription::Member* 
         return;
     }
 
-    /* Remove session info from sessionMap */
-    RemoveSessionRefs(src, id);
+    /* Remove session info from sessionMap, send a SessionLost to the member being removed. */
+    RemoveSessionRefs(src, id, true);
 
     /* Remove session info from router */
     router.RemoveSessionRoutes(src, id);

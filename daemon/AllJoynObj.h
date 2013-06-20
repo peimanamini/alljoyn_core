@@ -353,6 +353,15 @@ class AllJoynObj : public BusObject, public NameListener, public TransportListen
     void CancelSessionlessMessage(const InterfaceDescription::Member* member, Message& msg);
 
     /**
+     * Method handler for org.alljoyn.Bus.RemoveSessionMember
+     *
+     * @param member    Interface member.
+     * @param msg       The incoming method call message.
+     *
+     */
+    void RemoveSessionMember(const InterfaceDescription::Member* member, Message& msg);
+
+    /**
      * Add a new Bus-to-bus endpoint.
      *
      * @param endpoint  Bus-to-bus endpoint to add.
@@ -838,10 +847,12 @@ class AllJoynObj : public BusObject, public NameListener, public TransportListen
      * Utility function used to clean up the session map when a session participant.
      * leaves a session.
      *
-     * @param endpoint  Endpoint (virtual or remote) that has left the session.
-     * @param id        Session id.
+     * @param endpoint          Endpoint (virtual or remote) that has left(or is being removed from) the session.
+     * @param id                Session id.
+     * @param sendSessionLost   Whether to send a SessionLost to this endpoint.
+     *                          Set to true if this endpoint is being forcefully removed from the session by the binder.
      */
-    void RemoveSessionRefs(const char* epName, SessionId id);
+    void RemoveSessionRefs(const char* epName, SessionId id, bool sendSessionLost = false);
 
     /**
      * Utility function used to clean up the session map when a virtual endpoint with a

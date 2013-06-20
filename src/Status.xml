@@ -243,4 +243,10 @@ Copyright 2010 - 2012, Qualcomm Innovation Center, Inc.
   <status name="ER_ALLJOYN_ONAPPRESUME_REPLY_FAILED" value="0x90ec" comment="OnAppResume reply: Failed"/>
   <status name="ER_ALLJOYN_ONAPPRESUME_REPLY_UNSUPPORTED" value="0x90ed" comment="OnAppResume reply: Unsupported operation"/>
   <status name="ER_BUS_NO_SUCH_MESSAGE" value="0x90ee" comment="Message not found"/>
+  <status name="ER_ALLJOYN_REMOVESESSIONMEMBER_REPLY_NO_SESSION" value="0x90ef" comment="RemoveSessionMember reply: Specified session Id with this endpoint was not found"/>
+  <status name="ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_BINDER" value="0x90f0" comment="RemoveSessionMember reply: Endpoint is not the binder of session"/>
+  <status name="ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_MULTIPOINT" value="0x90f1" comment="RemoveSessionMember reply: Session is not multipoint"/>
+  <status name="ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_FOUND" value="0x90f2" comment="RemoveSessionMember reply: Specified session member was not found"/>
+  <status name="ER_ALLJOYN_REMOVESESSIONMEMBER_INCOMPATIBLE_REMOTE_DAEMON" value="0x90f3" comment="RemoveSessionMember reply: The remote daemon does not support this feature"/>
+  <status name="ER_ALLJOYN_REMOVESESSIONMEMBER_REPLY_FAILED" value="0x90f4" comment="RemoveSessionMember reply: Failed for unspecified reason"/>
 </status_block>

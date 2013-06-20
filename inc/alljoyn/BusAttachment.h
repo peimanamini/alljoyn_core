@@ -1566,6 +1566,23 @@ class BusAttachment : public MessageReceiver {
     QStatus LeaveSession(const SessionId& sessionId);
 
     /**
+     * Remove a member from an existing multipoint session.
+     * This function may be called by the binder of the session to forcefully remove a member from a session.
+     *
+     * This method is a shortcut/helper that issues an org.alljoyn.Bus.RemoveSessionMember method call to the local daemon
+     * and interprets the response.
+     *
+     * @param[in]  sessionId     Session id.
+     * @param[in]  memberName    Member to remove.
+     *
+     * @return
+     *      - #ER_OK iff daemon response was received and the remove member operation was successfully completed.
+     *      - #ER_BUS_NOT_CONNECTED if a connection has not been made with a local bus.
+     *      - Other error status codes indicating a failure.
+     */
+    QStatus RemoveSessionMember(SessionId sessionId, qcc::String memberName);
+
+    /**
      * Get the file descriptor for a raw (non-message based) session.
      *
      * @param sessionId   Id of an existing streaming session.

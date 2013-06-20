@@ -32,7 +32,7 @@
 #define QCC_MODULE  "ALLJOYN"
 
 /** Daemon-to-daemon protocol version number */
-#define ALLJOYN_PROTOCOL_VERSION  6
+#define ALLJOYN_PROTOCOL_VERSION  7
 
 namespace ajn {
 
@@ -371,6 +371,30 @@ QStatus CreateInterfaces(BusAttachment& bus);          /**< Create the org.alljo
 #define ALLJOYN_CANCELSESSIONLESS_REPLY_NO_SUCH_MSG  2   /**< CancelSessionlessMessage reply: Message with given serial num not found */
 #define ALLJOYN_CANCELSESSIONLESS_REPLY_NOT_ALLOWED  3   /**< CancelSessionlessMessage reply: Caller is not allowed to cancel msg */
 #define ALLJOYN_CANCELSESSIONLESS_REPLY_FAILED       4   /**< CancelSessionlessMessage reply: Failed for unspecified reason */
+// @}
+
+/**
+ * @name org.alljoyn.Bus.RemoveSessionMember
+ *  Interface: org.alljoyn.Bus
+ *  Method: RemoveSessionMember(uint32_t sessionId, String memberName)
+ *
+ *  Input params:
+ *     sessionId - Session from which the member needs to be removed.
+ *     memberName - Name of member to remove from the session.
+ *
+ *  Output params:
+ *     disposition - One of the ALLJOYN_REMOVESESSIONMEMBER_* dispositions listed below
+ *
+ */
+// @{
+/* org.alljoyn.Bus.RemoveSessionMember */
+#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_SUCCESS              1   /**< RemoveSessionMember reply: Success */
+#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_NO_SESSION           2   /**< RemoveSessionMember reply: Session with sender and session ID does not exist. */
+#define ALLJOYN_REMOVESESSIONMEMBER_NOT_BINDER                 3   /**< RemoveSessionMember reply: Session was found, but sender is not the binder */
+#define ALLJOYN_REMOVESESSIONMEMBER_NOT_MULTIPOINT             4   /**< RemoveSessionMember reply: Session was found, but is not multipoint */
+#define ALLJOYN_REMOVESESSIONMEMBER_NOT_FOUND                  5   /**< RemoveSessionMember reply: Session was found, but the specified session member was not found */
+#define ALLJOYN_REMOVESESSIONMEMBER_INCOMPATIBLE_REMOTE_DAEMON 6   /**< RemoveSessionMember reply: Session was found, but the remote daemon does not support this feature */
+#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_FAILED               7   /**< RemoveSessionMember reply: Failed for unspecified reason */
 // @}
 
 }

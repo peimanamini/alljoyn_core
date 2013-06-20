@@ -594,7 +594,20 @@ static void DoLeave(SessionId id)
         printf("Invalid session id %u specified in LeaveSession\n", id);
     }
 }
+static void DoRemoveMember(SessionId id, String memberName)
+{
+    /* Validate session id */
+    map<SessionId, SessionInfo>::const_iterator it = s_sessionMap.find(id);
+    if (it != s_sessionMap.end()) {
+        QStatus status = s_bus->RemoveSessionMember(id, memberName);
+        if (status != ER_OK) {
+            printf("DoRemoveMember(%u) failed with %s\n", id, QCC_StatusText(status));
+        }
+    } else {
+        printf("Invalid session id %u specified in DoRemoveMember\n", id);
+    }
 
+}
 static void DoSetLinkTimeout(SessionId id, uint32_t timeout)
 {
     QStatus status = s_bus->SetLinkTimeout(id, timeout);
@@ -825,6 +838,14 @@ int main(int argc, char** argv)
                 continue;
             }
             DoLeave(id);
+        } else if (cmd == "removemember") {
+            SessionId id = NextTokAsSessionId(line);
+            String name = NextTok(line);
+            if (id == 0 || name.empty()) {
+                printf("Usage: removemember <sessionId> <memberName>\n");
+                continue;
+            }
+            DoRemoveMember(id, name);
         } else if (cmd == "timeout") {
             SessionId id = NextTokAsSessionId(line);
             uint32_t timeout = StringToU32(NextTok(line), 0, 0);

@@ -1686,6 +1686,65 @@ QStatus BusAttachment::LeaveSession(const SessionId& sessionId)
     return status;
 }
 
+QStatus BusAttachment::RemoveSessionMember(SessionId sessionId, String memberName)
+{
+    if (!IsConnected()) {
+        return ER_BUS_NOT_CONNECTED;
+    }
+
+    Message reply(*this);
+    MsgArg args[2];
+    size_t numArgs = ArraySize(args);
+
+    MsgArg::Set(args, numArgs, "us", sessionId, memberName.c_str());
+
+    const ProxyBusObject& alljoynObj = this->GetAllJoynProxyObj();
+    QStatus status = alljoynObj.MethodCall(org::alljoyn::Bus::InterfaceName, "RemoveSessionMember", args, numArgs, reply);
+    if (ER_OK == status) {
+        uint32_t disposition;
+        status = reply->GetArgs("u", &disposition);
+        if (ER_OK == status) {
+            switch (disposition) {
+
+            case ALLJOYN_REMOVESESSIONMEMBER_REPLY_SUCCESS:
+                break;
+
+            case ALLJOYN_REMOVESESSIONMEMBER_REPLY_NO_SESSION:
+                status = ER_ALLJOYN_REMOVESESSIONMEMBER_REPLY_NO_SESSION;
+                break;
+
+            case ALLJOYN_REMOVESESSIONMEMBER_NOT_BINDER:
+                status = ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_BINDER;
+                break;
+
+            case ALLJOYN_REMOVESESSIONMEMBER_NOT_MULTIPOINT:
+                status = ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_MULTIPOINT;
+                break;
+
+            case ALLJOYN_REMOVESESSIONMEMBER_NOT_FOUND:
+                status = ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_FOUND;
+                break;
+
+            case ALLJOYN_REMOVESESSIONMEMBER_INCOMPATIBLE_REMOTE_DAEMON:
+                status = ER_ALLJOYN_REMOVESESSIONMEMBER_INCOMPATIBLE_REMOTE_DAEMON;
+                break;
+
+            case ALLJOYN_REMOVESESSIONMEMBER_REPLY_FAILED:
+                status = ER_ALLJOYN_REMOVESESSIONMEMBER_REPLY_FAILED;
+                break;
+
+            default:
+                status = ER_BUS_UNEXPECTED_DISPOSITION;
+                break;
+            }
+        }
+    } else {
+        QCC_LogError(status, ("%s.RemoveSessionMember returned ERROR_MESSAGE (error=%s)", org::alljoyn::Bus::InterfaceName, reply->GetErrorDescription().c_str()));
+    }
+
+    return status;
+}
+
 QStatus BusAttachment::GetSessionFd(SessionId sessionId, SocketFd& sockFd)
 {
     QCC_DbgTrace(("BusAttachment::GetSessionFd sessionId:%d", sessionId));

@@ -21,6 +21,8 @@ all: basic chat
 BASIC_SRCS = $(wildcard basic/*.cc)
 BASIC_BINS = $(patsubst %.cc,%,$(BASIC_SRCS))
 
+LIBS += -lalljoyn
+
 basic : $(BASIC_BINS)
 
 $(BASIC_BINS) : $(BASIC_SRCS)

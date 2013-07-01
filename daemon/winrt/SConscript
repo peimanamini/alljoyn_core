@@ -17,7 +17,10 @@ import os
 Import('daemon_env', 'daemon_objs', 'common_objs', 'alljoyn_core_objs', 'bdobj')
 
 # Add OS specific daemon_objs
-os_objs = daemon_env.Object(['ProximityScanner.cc', 'Socket.cc'])
+if daemon_env['ICE'] == 'on':
+    os_objs = daemon_env.Object(['ProximityScanner.cc', 'Socket.cc'])
+else:
+    os_objs = []
 
 proximity_objs = daemon_env.SConscript('proximity/SConscript', exports = ['daemon_env'])
 winmdswitch = '\"/WINMDFILE:%s\"' % os.path.abspath('AllJoyn.winmd')

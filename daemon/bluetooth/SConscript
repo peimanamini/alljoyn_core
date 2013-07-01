@@ -1,4 +1,4 @@
-# Copyright 2012, Qualcomm Innovation Center, Inc.
+# Copyright 2013, Qualcomm Innovation Center, Inc.
 # 
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,8 +13,16 @@
 #    limitations under the License.
 # 
 
+
 Import('daemon_env')
 
-# Build using JSON
-objs = daemon_env.Object(daemon_env.Glob('*.cc'))
+bt_env = daemon_env.Clone()
+
+bt_env.Append(CPPPATH=[bt_env.Dir('.').srcnode()])
+
+objs = bt_env.Object(bt_env.Glob('*.cc'))
+
+if bt_env['OS'] in ['linux', 'openwrt', 'android']:
+    objs.extend(bt_env.SConscript('bt_bluez/SConscript', exports = ['bt_env']))
+
 Return('objs')

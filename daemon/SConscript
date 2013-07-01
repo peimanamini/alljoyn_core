@@ -13,10 +13,24 @@
 #    limitations under the License.
 # 
 
-Import('env', 'common_objs', 'alljoyn_core_objs')
 from os.path import basename
 
+Import('env', 'common_objs', 'alljoyn_core_objs')
+
 daemon_env = env.Clone()
+
+vars = Variables()
+vars.Add(EnumVariable('ICE', 'Enable ICE Transport', 'on', allowed_values=('on', 'off')))
+if daemon_env['OS'] in ['linux', 'openwrt', 'android']:
+    vars.Add(EnumVariable('BT', 'Enable Bluetooth Transport', 'on', allowed_values=('on', 'off')))
+vars.Update(daemon_env)
+Help(vars.GenerateHelpText(daemon_env))
+
+if not daemon_env.has_key('ICE'):
+    daemon_env['ICE'] = 'off'
+
+if not daemon_env.has_key('BT'):
+    daemon_env['BT'] = 'off'
 
 if daemon_env['OS'] == "darwin":
     # Darwin has its own version of the daemon transport
@@ -27,58 +41,45 @@ else:
 if daemon_env['OS'] != "android":
     srcs += [daemon_env['OS_GROUP'] + '/PermissionMgr.cc']
 
-# scattergather sources
-	
-# bluetooth source files
-bt_srcs = [ 'BTController.cc', 'BTTransport.cc', 'BTNodeDB.cc' ]
+daemon_env.Append(CPPPATH = [ daemon_env.Dir('..').srcnode(),
+                              daemon_env.Dir('.').srcnode(),
+                              daemon_env.Dir('$OS_GROUP').srcnode() ])
 
-# basic daemon objects (excluding bluetooth)
-base_srcs = [ f for f in srcs if basename(str(f)) not in bt_srcs ]
-base_objs = daemon_env.Object(base_srcs)
+daemon_objs = daemon_env.Object(srcs)
 
-# Add in various Name Service support
-ns_srcs = daemon_env.SConscript('ns/SConscript', exports = ['daemon_env'])
-base_objs.extend(daemon_env.Object(ns_srcs))
-
-# Add in ICE support
-daemon_env.Append(CPPPATH = [daemon_env.Dir('..').srcnode(), daemon_env.Dir('.').srcnode(), daemon_env.Dir('$OS_GROUP').srcnode()])
-ice_srcs = daemon_env.SConscript('ice/SConscript', exports = ['daemon_env'])
-base_objs.extend(daemon_env.Object(ice_srcs))
-json_srcs = daemon_env.SConscript('JSON/SConscript', exports = ['daemon_env'])
-base_objs.extend(daemon_env.Object(json_srcs))
+daemon_objs.extend(daemon_env.SConscript('ns/SConscript', exports = ['daemon_env']))
 
 # Add in P2P Helper support for Android only
 if daemon_env['OS'] == "android":
-    android_srcs = daemon_env.SConscript('android/SConscript', exports = ['daemon_env'])
-    base_objs.extend(daemon_env.Object(android_srcs))
+    daemon_objs.extend(daemon_env.SConscript('android/SConscript', exports = ['daemon_env']))
 
-# Add in bluetooth support
-if daemon_env['OS'] == 'darwin' or daemon_env['OS_GROUP'] in ['winrt', 'windows']:
-    # bluetooth not supported on this platform
-    daemon_objs = base_objs;
-    pass
-#elif daemon_env['OS_GROUP'] == "windows":
-#    bt_srcs.extend(daemon_env.SConscript('bt_windows/SConscript'))
-#    daemon_objs = base_objs + daemon_env.Object(bt_srcs)
-#    daemon_env.AppendUnique(LIBS = ['Bthprops'])
-else:
-    # Use BlueZ
-    bt_srcs.extend(daemon_env.SConscript('bt_bluez/SConscript', exports = ['daemon_env']))
-    daemon_objs = base_objs + daemon_env.Object(bt_srcs)
+
+if daemon_env['BT'] == 'on':
+    daemon_env.Append(CPPDEFINES = ['AJ_ENABLE_BT'])
+    daemon_env.Append(CPPPATH = [daemon_env.Dir('./bluetooth').srcnode()])
+    bt_objs = daemon_env.SConscript('bluetooth/SConscript', exports = ['daemon_env'])
+    daemon_objs.extend(bt_objs)
+
+if daemon_env['ICE'] == 'on':
+    daemon_env.Append(CPPDEFINES=['AJ_ENABLE_ICE'])
+    daemon_env.Append(CPPPATH = [ daemon_env.Dir('./packetengine').srcnode(),
+                                  daemon_env.Dir('./ice').srcnode() ])
+    pe_objs = daemon_env.SConscript('packetengine/SConscript', exports = ['daemon_env'])
+    ice_objs = daemon_env.SConscript('ice/SConscript', exports = ['daemon_env'])
+    json_objs = daemon_env.SConscript('JSON/SConscript', exports = ['daemon_env'])
+    daemon_objs.extend(pe_objs + ice_objs + json_objs)
 
 # Bundled daemon object file
 bdobj = daemon_env.SConscript('bundled/SConscript', exports = ['daemon_env'])
 
 # AllJoyn Daemon
 progs, os_objs = daemon_env.SConscript('${OS_GROUP}/SConscript', exports=['daemon_env', 'daemon_objs', 'common_objs', 'alljoyn_core_objs', 'bdobj'])
-base_objs.extend(os_objs)
 
-if daemon_env['OS'] != 'darwin':
-    daemon_objs.extend(os_objs)
+daemon_objs.extend(os_objs)
 
 # Daemon library
 if daemon_env['OS_GROUP'] != 'winrt':
-    lib = daemon_env.StaticLibrary('ajdaemon', base_objs);
+    lib = daemon_env.StaticLibrary('ajdaemon', daemon_objs);
 else:
     lib = []
 

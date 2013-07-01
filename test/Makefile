@@ -17,8 +17,9 @@
 
 all: progs
 
+LIBS += -lalljoyn
 PROG_BINS =  \
-		bignum \
+        bignum \
         socktest \
         autochat \
         remarshal \

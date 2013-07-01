@@ -44,7 +44,7 @@
 #include "NullTransport.h"
 #include "PasswordManager.h"
 
-#if defined(QCC_OS_ANDROID) || defined(QCC_OS_LINUX) || defined(QCC_OS_DARWIN) || defined(QCC_OS_WINRT)
+#if defined(AJ_ENABLE_ICE)
 #include "DaemonICETransport.h"
 #endif
 
@@ -320,7 +320,7 @@ QStatus BundledDaemon::Start(NullTransport* nullTransport)
          */
         if (!transportsInitialized) {
             Add(new TransportFactory<TCPTransport>(TCPTransport::TransportName, false));
-#if defined(QCC_OS_ANDROID) || defined(QCC_OS_LINUX) || defined(QCC_OS_DARWIN) || defined(QCC_OS_WINRT)
+#if defined(AJ_ENABLE_ICE)
             Add(new TransportFactory<DaemonICETransport>(DaemonICETransport::TransportName, false));
 #endif
 #if defined(QCC_OS_WINRT)

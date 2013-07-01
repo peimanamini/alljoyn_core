@@ -117,10 +117,10 @@ void BTTransport::DisconnectAll()
 #if defined(QCC_OS_DARWIN)
 #error Darwin support for bluetooth to be implemented
 #else
-#include "../bt_bluez/BTAccessor.h"
+#include "bt_bluez/BTAccessor.h"
 #endif
 #elif defined QCC_OS_GROUP_WINDOWS
-#include "../bt_windows/BTAccessor.h"
+#include "bt_windows/BTAccessor.h"
 #endif
 
 

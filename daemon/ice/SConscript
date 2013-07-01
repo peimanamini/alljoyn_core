@@ -14,10 +14,5 @@
 # 
 
 Import('daemon_env')
-
-# Make private headers available
-daemon_env.Append(CPPPATH=[daemon_env.Dir('.').srcnode()])
-
-# Include DaemoICETransport related files
-srcs = daemon_env.Glob('*.cc')
-Return('srcs')
+objs = daemon_env.Object(daemon_env.Glob('*.cc'))
+Return('objs')

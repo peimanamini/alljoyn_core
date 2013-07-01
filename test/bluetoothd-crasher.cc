@@ -39,7 +39,7 @@
 #include <alljoyn/BusAttachment.h>
 #include <alljoyn/DBusStd.h>
 
-#include "../daemon/BDAddress.h"
+#include "../daemon/bluetooth/BDAddress.h"
 
 #include <alljoyn/Status.h>
 

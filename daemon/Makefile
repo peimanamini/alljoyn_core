@@ -19,11 +19,8 @@ DAEMON_LIB = libajdaemon.a
 
 all: $(DAEMON_LIB) daemon bundled_obj test_progs
 
-BT_SRCS = BTController.cc BTTransport.cc BTNodeDB.cc
 DAEMON_SRCS = $(wildcard *.cc)
 DAEMON_SRCS += $(wildcard *.c)
-DAEMON_SRCS += $(wildcard ice/*.cc)
-DAEMON_SRCS += $(wildcard JSON/*.cc)
 DAEMON_SRCS += $(wildcard ns/*.cc)
 DAEMON_SRCS += \
 	$(OS_GROUP)/ProximityScanner.cc \
@@ -43,14 +40,20 @@ ifeq "$(OS)" "android"
 else
     DAEMON_SRCS += $(OS_GROUP)/PermissionMgr.cc
 endif
-# 
-# Select BlueZ for bluetooth support or not
-ifeq "$(OS)" "android_donut"
-    # Skip bluetooth
-else
+
+ifeq "$(BT)" "on"
     # Use BlueZ
-    INCLUDE += -I$(PWD)/bt_bluez
-    DAEMON_SRCS += $(wildcard bt_bluez/*.cc)
+    INCLUDE += -I$(PWD)/bluetooth -I$(PWD)/bluetooth/bt_bluez
+    DAEMON_SRCS += $(wildcard bluetooth/*.cc) $(wildcard bluetooth/bt_bluez/*.cc)
+endif
+
+ifeq "$(BT)" "on"
+    # Use ICE
+    INCLUDE += -I$(PWD)/packetengine
+    DAEMON_SRCS += $(wildcard ice/*.cc)
+    DAEMON_SRCS += $(wildcard JSON/*.cc)
+    DAEMON_SRCS += $(wildcard packetengine/*.cc)
+
 endif
 
 DAEMON_OBJS = $(patsubst %.cc,%.o,$(DAEMON_SRCS))
@@ -73,6 +76,8 @@ $(TESTDIR)/mcmd.o : $(TESTDIR)/mcmd.cc
 BUNDLED_SRCS = bundled/BundledDaemon.cc
 BUNDLED_OBJ = $(patsubst %.cc,%.o,$(BUNDLED_SRCS))
 
+LIBS += -lalljoyn
+
 %.o:%.cc
 	$(CC) $(CXXFLAGS) $(CPPDEFINES) $(INCLUDE) -c -o $@ $<
 
@@ -87,7 +92,7 @@ daemon : $(DAEMON_OBJS) $(DAEMON_MAIN_OBJ)
 bundled_obj : $(BUNDLED_OBJ)
 	cp $(BUNDLED_OBJ) $(INSTALLDIR)/dist/lib
 
-test_progs: advtunnel bbdaemon mcmd 
+test_progs: advtunnel bbdaemon
 
 advtunnel : $(DAEMON_OBJS) $(TESTDIR)/advtunnel.o
 	$(CC) $(CXXFLAGS) $(CPPDEFINES) $(INCLUDE) $(LINKFLAGS) -o advtunnel $(DAEMON_OBJS) $(TESTDIR)/advtunnel.o $(LIBS)
@@ -100,10 +105,6 @@ bbdaemon : $(DAEMON_OBJS) $(TESTDIR)/bbdaemon.o
 DaemonTest : $(DAEMON_OBJS) $(TESTDIR)/DaemonTest.o
 	$(CC) $(CXXFLAGS) $(CPPDEFINES) $(INCLUDE) $(LINKFLAGS) -o DaemonTest $(DAEMON_OBJS) $(TESTDIR)/DaemonTest.o $(LIBS)
 	cp DaemonTest $(INSTALLDIR)/dist/bin
-
-mcmd : $(DAEMON_OBJS) $(TESTDIR)/mcmd.o
-	$(CC) $(CXXFLAGS) $(CPPDEFINES) $(INCLUDE) $(LINKFLAGS) -o mcmd $(DAEMON_OBJS) $(TESTDIR)/mcmd.o $(LIBS)
-	cp mcmd $(INSTALLDIR)/dist/bin
 
 clean:
 	@rm -f *.o *~ $(OS_GROUP)/*.o $(TESTDIR)/*.o bt_bluez/*.o ice/*.o bundled/*.o JSON/*.o ns/*.o alljoyn-daemon $(DAEMON_LIB) advtunnel bbdaemon DaemonTest mcmd

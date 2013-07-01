@@ -14,5 +14,5 @@
 # 
 
 Import('daemon_env')
-srcs = daemon_env.Glob('*.cc')
-Return('srcs')
+objs = daemon_env.Object(daemon_env.Glob('*.cc'))
+Return('objs')

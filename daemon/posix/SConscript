@@ -16,7 +16,10 @@
 Import('daemon_env', 'daemon_objs')
 
 # Add OS specific daemon_objs
-os_objs = daemon_env.Object(['ProximityScanner.cc','Socket.cc'])
+if daemon_env['ICE'] == 'on':
+    os_objs = daemon_env.Object(['ProximityScanner.cc','Socket.cc'])
+else:
+    os_objs = []
 
 # Build the posix daemon and service launcher helper.
 if daemon_env['OS'] != 'darwin':

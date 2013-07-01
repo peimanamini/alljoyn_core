@@ -51,11 +51,11 @@ objs.append(libenv.Object(version_cc))
 alljoyn_core_objs.append(libenv.Object(version_cc))
 
 if libenv['OS_GROUP'] == 'winrt':
-    liballjoyn=None
+    libs = None
     # winrt-specific build step
     alljoyn_core_objs.append(libenv.SConscript(libenv['OS_GROUP'] + '/SConscript', exports = ['libenv']));
 else:
     # AllJoyn Static Library
-    liballjoyn = libenv.StaticLibrary('alljoyn', objs)
+    libs = libenv.StaticLibrary('alljoyn', objs)
 
-Return ('liballjoyn','alljoyn_core_objs')
+Return ('libs','alljoyn_core_objs')

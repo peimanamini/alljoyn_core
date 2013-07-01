@@ -50,15 +50,15 @@
 #include "Transport.h"
 #include "TCPTransport.h"
 #include "DaemonTransport.h"
+#if defined(AJ_ENABLE_ICE)
 #include "DaemonICETransport.h"
+#endif
 
 #if defined(QCC_OS_ANDROID)
 //#include "android/WFDTransport.h"
 #endif
 
-#if defined(QCC_OS_DARWIN)
-#warning BT Support on Darwin needs to be implemented
-#else
+#if defined(AJ_ENABLE_BT)
 #include "BTTransport.h"
 #endif
 
@@ -108,12 +108,13 @@ static const char
     "<busconfig>"
     "  <listen>unix:abstract=alljoyn</listen>"
     "  <listen>launchd:env=DBUS_LAUNCHD_SESSION_BUS_SOCKET</listen>"
+#if defined(AJ_ENABLE_BT)
     "  <listen>bluetooth:</listen>"
+#endif
     "  <listen>tcp:r4addr=0.0.0.0,r4port=9955</listen>"
 #if defined(QCC_OS_ANDROID)
 //    "  <listen>wfd:r4addr=0.0.0.0,r4port=9956</listen>"
 #endif
-    "  <listen>ice:</listen>"
     "  <limit auth_timeout=\"5000\"/>"
     "  <limit max_incomplete_connections=\"16\"/>"
     "  <limit max_completed_connections=\"64\"/>"
@@ -128,6 +129,8 @@ static const char
     "  <tcp>"
 //    "    <property router_advertisement_prefix=\"org.alljoyn.BusNode.\"/>"
     "  </tcp>"
+#if defined(AJ_ENABLE_ICE)
+    "  <listen>ice:</listen>"
     "  <ice>"
     "    <limit max_incomplete_connections=\"16\"/>"
     "    <limit max_completed_connections=\"64\"/>"
@@ -138,6 +141,7 @@ static const char
     "    <property protocol=\"HTTPS\"/>"
     "    <property enable_ipv6=\"false\"/>"
     "  </ice_discovery_manager>"
+#endif
     "</busconfig>";
 
 
@@ -173,10 +177,21 @@ class OptParse {
     };
 
     OptParse(int argc, char** argv) :
-        argc(argc), argv(argv), fork(false), noFork(false), noBT(false), noTCP(
-            false), noICE(false), noWFD(false), noLaunchd(false), noSwitchUser(false),
-        printAddressFd(-1), printPidFd(-1), session(false), system(
-            false), internal(false), configService(false),
+        argc(argc), argv(argv),
+        fork(false), noFork(false),
+#if defined(AJ_ENABLE_BT)
+        noBT(false),
+#endif
+#if defined(AJ_ENABLE_ICE)
+        noICE(false),
+#endif
+        noTCP(false),
+        noWFD(false),
+        noLaunchd(false),
+        noSwitchUser(false),
+        printAddressFd(-1), printPidFd(-1),
+        session(false), system(false), internal(false),
+        configService(false),
         verbosity(LOG_WARNING) {
     }
 
@@ -191,14 +206,18 @@ class OptParse {
     bool GetNoFork() const {
         return noFork;
     }
+#if defined(AJ_ENABLE_BT)
     bool GetNoBT() const {
         return noBT;
     }
-    bool GetNoTCP() const {
-        return noTCP;
-    }
+#endif
+#if defined(AJ_ENABLE_ICE)
     bool GetNoICE() const {
         return noICE;
+    }
+#endif
+    bool GetNoTCP() const {
+        return noTCP;
     }
     bool GetNoWFD() const {
         return noWFD;
@@ -232,9 +251,13 @@ class OptParse {
     qcc::String configFile;
     bool fork;
     bool noFork;
+#if defined(AJ_ENABLE_BT)
     bool noBT;
-    bool noTCP;
+#endif
+#if defined(AJ_ENABLE_ICE)
     bool noICE;
+#endif
+    bool noTCP;
     bool noWFD;
     bool noLaunchd;
     bool noSwitchUser;
@@ -261,7 +284,14 @@ void OptParse::PrintUsage() {
 #endif
         "]\n"
         "%*s [--print-address[=DESCRIPTOR]] [--print-pid[=DESCRIPTOR]]\n"
-        "%*s [--fork | --nofork] [--no-bt] [--no-tcp] [--no-ice] [--no-wfd] [--no-launchd]\n"
+        "%*s [--fork | --nofork] "
+#if defined(AJ_ENABLE_BT)
+        "[--no-bt] "
+#endif
+#if defined(AJ_ENABLE_ICE)
+        "[--no-ice] "
+#endif
+        "[--no-tcp] [--no-wfd] [--no-launchd]\n"
         "%*s  [--no-switch-user] [--verbosity=LEVEL] [--version]\n\n"
         "    --session\n"
         "        Use the standard configuration for the per-login-session message bus.\n\n"
@@ -284,12 +314,16 @@ void OptParse::PrintUsage() {
         "    --nofork\n"
         "        Force the daemon to only run in the foreground (override config file\n"
         "        setting).\n\n"
+#if defined(AJ_ENABLE_BT)
         "    --no-bt\n"
         "        Disable the Bluetooth transport (override config file setting).\n\n"
-        "    --no-tcp\n"
-        "        Disable the TCP transport (override config file setting).\n\n"
+#endif
+#if defined(AJ_ENABLE_ICE)
         "    --no-ice\n"
         "        Disable the ICE transport (override config file setting).\n\n"
+#endif
+        "    --no-tcp\n"
+        "        Disable the TCP transport (override config file setting).\n\n"
         "    --no-wfd\n"
         "        Disable the Wifi-Direct transport (override config file setting).\n\n"
         "    --no-launchd\n"
@@ -420,11 +454,15 @@ OptParse::ParseResultCode OptParse::ParseResult()
             }
             noFork = true;
         } else if (arg.compare("--no-bt") == 0) {
+#if defined(AJ_ENABLE_BT)
             noBT = true;
+#endif
+        } else if (arg.compare("--no-ice") == 0) {
+#if defined(AJ_ENABLE_ICE)
+            noICE = true;
+#endif
         } else if (arg.compare("--no-tcp") == 0) {
             noTCP = true;
-        } else if (arg.compare("--no-ice") == 0) {
-            noICE = true;
         } else if (arg.compare("--no-wfd") == 0) {
             noWFD = true;
         } else if (arg.compare("--no-launchd") == 0) {
@@ -517,17 +555,21 @@ int daemon(OptParse& opts) {
         } else if (addrStr.compare(0, sizeof("launchd:") - 1, "launchd:") == 0) {
             skip = opts.GetNoLaunchd();
 
-        } else if (addrStr.compare(0, sizeof("tcp:") - 1, "tcp:") == 0) {
-            skip = opts.GetNoTCP();
-
+#if defined(AJ_ENABLE_ICE)
         } else if (addrStr.compare(0, sizeof("ice:") - 1, "ice:") == 0) {
             skip = opts.GetNoICE();
+#endif
+
+        } else if (addrStr.compare(0, sizeof("tcp:") - 1, "tcp:") == 0) {
+            skip = opts.GetNoTCP();
 
         } else if (addrStr.compare(0, sizeof("wfd:") - 1, "wfd:") == 0) {
             skip = opts.GetNoWFD();
 
+#if defined(AJ_ENABLE_BT)
         } else if (addrStr.compare("bluetooth:") == 0) {
             skip = opts.GetNoBT();
+#endif
 
         } else {
             Log(LOG_ERR, "Unsupported listen address: %s (ignoring)\n", addrStr.c_str());
@@ -558,15 +600,11 @@ int daemon(OptParse& opts) {
     TransportFactoryContainer cntr;
     cntr.Add(new TransportFactory<DaemonTransport>(DaemonTransport::TransportName, false));
     cntr.Add(new TransportFactory<TCPTransport>(TCPTransport::TransportName, false));
-#if defined(QCC_OS_DARWIN)
-#warning BT transport factory needs to be implemented for Darwin
-#else
+#if defined(AJ_ENABLE_BT)
     cntr.Add(new TransportFactory<BTTransport> ("bluetooth", false));
 #endif
-#if defined(QCC_OS_LINUX) || defined(QCC_OS_ANDROID)
+#if defined(AJ_ENABLE_ICE)
     cntr.Add(new TransportFactory<DaemonICETransport> ("ice", false));
-#else
-#warning ICE transport factory is not operational yet for Windows and Darwin
 #endif
 #if defined(QCC_OS_ANDROID)
 //    cntr.Add(new TransportFactory<WFDTransport>(WFDTransport::TransportName, false));

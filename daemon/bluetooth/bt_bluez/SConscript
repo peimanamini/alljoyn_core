@@ -1,4 +1,4 @@
-# Copyright 2012, Qualcomm Innovation Center, Inc.
+# Copyright 2010 - 2011, Qualcomm Innovation Center, Inc.
 # 
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
 #    limitations under the License.
 # 
 
-Import('daemon_env')
+Import('bt_env')
 
-# Build using JSON
-objs = daemon_env.Object(daemon_env.Glob('*.cc'))
+# Build using BlueZ
+objs = bt_env.Object(bt_env.Glob('*.cc'))
 Return('objs')

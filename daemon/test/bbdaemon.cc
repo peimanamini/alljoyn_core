@@ -43,11 +43,7 @@
 #include "android/WFDTransport.h"
 #endif
 
-#if defined(QCC_OS_DARWIN)
-#warning "Bluetooth transport not implemented on Darwin"
-#elif defined(QCC_OS_GROUP_WINDOWS)
-//warning "Bluetooth transport currently not supported on Windows"
-#else
+#if defined(AJ_ENABLE_BT)
 #include "BTTransport.h"
 #endif
 
@@ -84,6 +80,7 @@ static const char daemonConfig[] =
     "  <tcp>"
 //    "    <property router_advertisement_prefix=\"org.alljoyn.BusNode.\"/>"
     "  </tcp>"
+#if defined(AJ_ENABLE_ICE)
     "  <ice>"
     "    <limit max_incomplete_connections=\"16\"/>"
     "    <limit max_completed_connections=\"64\"/>"
@@ -94,6 +91,7 @@ static const char daemonConfig[] =
     "    <property protocol=\"HTTPS\"/>"
     "    <property enable_ipv6=\"false\"/>"
     "  </ice_discovery_manager>"
+#endif
     "</busconfig>";
 
 /** Static top level message bus object */
@@ -395,7 +393,9 @@ int main(int argc, char** argv)
     QStatus status = ER_OK;
     qcc::GUID128 guid;
     bool mimicBbservice = false;
+#if defined(AJ_ENABLE_BT)
     bool noBT = false;
+#endif
 
     printf("AllJoyn Library version: %s\n", ajn::GetVersion());
     printf("AllJoyn Library build info: %s\n", ajn::GetBuildInfo());
@@ -413,8 +413,10 @@ int main(int argc, char** argv)
             exit(0);
         } else if (0 == strcmp("-m", argv[i])) {
             mimicBbservice = true;
+#if defined(AJ_ENABLE_BT)
         } else if (0 == strcmp("-b", argv[i])) {
             noBT = true;
+#endif
         } else if (0 == strcmp("-le", argv[i])) {
             _Message::SetEndianess(ALLJOYN_LITTLE_ENDIAN);
         } else if (0 == strcmp("-be", argv[i])) {
@@ -475,11 +477,15 @@ int main(int argc, char** argv)
      * defaults as the remote transport, and since it is on Android, supports
      * the WFD transport and may support the bluetooth transport if desired.
      */
+#if defined(AJ_ENABLE_BT)
     if (noBT) {
         serverArgs = env->Find("BUS_SERVER_ADDRESSES", "unix:abstract=alljoyn;tcp:;wfd:");
     } else {
         serverArgs = env->Find("BUS_SERVER_ADDRESSES", "unix:abstract=alljoyn;tcp:;wfd:;bluetooth:");
     }
+#else
+    serverArgs = env->Find("BUS_SERVER_ADDRESSES", "unix:abstract=alljoyn;tcp:;wfd:");
+#endif
 
 #endif /* !defined(DAEMON_LIB) */
 #endif /* defined(QCC_OS_ANDROID) */
@@ -502,11 +508,15 @@ int main(int argc, char** argv)
      * transport, uses the TCP transport for the remote transport and may or may
      * not support bluetooth if desired.
      */
+#if defined(AJ_ENABLE_BT)
     if (noBT) {
         serverArgs = env->Find("BUS_SERVER_ADDRESSES", "unix:abstract=alljoyn;tcp:");
     } else {
         serverArgs = env->Find("BUS_SERVER_ADDRESSES", "unix:abstract=alljoyn;tcp:;bluetooth:");
     }
+#else
+    serverArgs = env->Find("BUS_SERVER_ADDRESSES", "unix:abstract=alljoyn;tcp:");
+#endif
 
 #endif /* !defined(QCC_OS_GROUP_WINDOWS) && !defined(QCC_OS_ANDROID) && !defined(QCC_OS_DARWIN) */
 
@@ -527,7 +537,7 @@ int main(int argc, char** argv)
     cntr.Add(new TransportFactory<WFDTransport>(WFDTransport::TransportName, false));
 #endif
 
-#if !defined(QCC_OS_DARWIN) && !defined(QCC_OS_GROUP_WINDOWS)
+#if defined(AJ_ENABLE_BT)
     if (!noBT) {
         cntr.Add(new TransportFactory<BTTransport>(BTTransport::TransportName, false));
     }

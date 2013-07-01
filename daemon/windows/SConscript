@@ -16,7 +16,10 @@
 Import('daemon_env', 'daemon_objs')
 
 # OS specific objects for daemon
-os_objs = daemon_env.Object(['Socket.cc', 'ProximityScanner.cc'])
+if daemon_env['ICE'] == 'on':
+    os_objs = daemon_env.Object(['Socket.cc', 'ProximityScanner.cc'])
+else:
+    os_objs = []
 
 # Build the resources for the dll
 rsc = daemon_env.RES('DaemonResources.rc')

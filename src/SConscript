@@ -14,7 +14,8 @@
 # 
 
 Import('ajenv')
-Import('common_objs')
+Import('common_static_objs')
+Import('common_shared_objs')
 from os.path import basename
 
 # Need to clone the environment so that building a shared library does not
@@ -40,22 +41,27 @@ else:
     else:
         os_srcs += [ f for f in libenv.Glob(libenv['OS_GROUP'] + '/' + libenv['OS'] + '/*.cc')]
 
-
-alljoyn_core_objs = libenv.Object(srcs) + libenv.Object(os_srcs)
-objs = common_objs + alljoyn_core_objs 
-
 version_cc = libenv.GenVersion('version')
-libenv.Depends(version_cc, objs)
-objs.append(libenv.Object(version_cc))
 
-alljoyn_core_objs.append(libenv.Object(version_cc))
+static_objs = common_static_objs + libenv.Object(srcs) + libenv.Object(os_srcs)
+libenv.Depends(version_cc, static_objs)
+static_objs.append(libenv.Object(version_cc))
+
+if libenv['LIBTYPE'] == 'static':
+    shared_objs = []
+else:
+    shared_objs = common_shared_objs + libenv.SharedObject(srcs) + libenv.SharedObject(os_srcs)
+    libenv.Depends(version_cc, shared_objs)
+    shared_objs.append(libenv.SharedObject(version_cc))
 
 if libenv['OS_GROUP'] == 'winrt':
     libs = None
     # winrt-specific build step
-    alljoyn_core_objs.append(libenv.SConscript(libenv['OS_GROUP'] + '/SConscript', exports = ['libenv']));
+    static_objs.append(libenv.SConscript(libenv['OS_GROUP'] + '/SConscript', exports = ['libenv']));
 else:
     # AllJoyn Static Library
-    libs = libenv.StaticLibrary('alljoyn', objs)
+    libs = libenv.StaticLibrary('alljoyn', static_objs)
+    if libenv['LIBTYPE'] != 'static':
+        libs.append(libenv.SharedLibrary('alljoyn', shared_objs))
 
-Return ('libs','alljoyn_core_objs')
+Return ('libs', 'static_objs', 'shared_objs')

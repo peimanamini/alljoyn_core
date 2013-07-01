@@ -15,7 +15,7 @@
 
 from os.path import basename
 
-Import('env', 'common_objs', 'alljoyn_core_objs')
+Import('env')
 
 daemon_env = env.Clone()
 
@@ -73,7 +73,11 @@ if daemon_env['ICE'] == 'on':
 bdobj = daemon_env.SConscript('bundled/SConscript', exports = ['daemon_env'])
 
 # AllJoyn Daemon
-progs, os_objs = daemon_env.SConscript('${OS_GROUP}/SConscript', exports=['daemon_env', 'daemon_objs', 'common_objs', 'alljoyn_core_objs', 'bdobj'])
+if daemon_env['OS_GROUP']=='winrt':
+    Import('winrt_objs')
+    daemon_objs.extend(winrt_objs + [bdobj])
+
+progs, os_objs = daemon_env.SConscript('${OS_GROUP}/SConscript', exports=['daemon_env', 'daemon_objs'])
 
 daemon_objs.extend(os_objs)
 

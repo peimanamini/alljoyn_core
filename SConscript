@@ -23,7 +23,7 @@ env['_ALLJOYNCORE_'] = True
 env.Append(CPPPATH = ['$DISTDIR/cpp/inc/alljoyn'])
 
 # Dependent Projects
-common_hdrs, common_objs = env.SConscript(['../common/SConscript'])
+common_hdrs, common_static_objs, common_shared_objs = env.SConscript(['../common/SConscript'])
 
 
 # Make alljoyn C++ dist a sub-directory of the alljoyn dist.
@@ -85,7 +85,7 @@ for d, h in common_hdrs.items():
 ajenv.Append(CPPPATH = [ajenv.Dir('src')])
 
 # AllJoyn Libraries
-libs, alljoyn_core_objs = ajenv.SConscript('$OBJDIR/SConscript', exports = ['ajenv', 'common_objs'])
+libs, static_objs, shared_objs = ajenv.SConscript('$OBJDIR/SConscript', exports = ['ajenv', 'common_static_objs', 'common_shared_objs'])
 
 ajenv.Install('$CPP_DISTDIR/lib', libs)
 
@@ -94,14 +94,16 @@ if ajenv['OS_GROUP'] != 'winrt':
     env.Prepend(LIBS = 'alljoyn')
 
 # AllJoyn Daemon, daemon library, and bundled daemon object file
-daemon_progs, bdlib, bdobj = env.SConscript('$OBJDIR/daemon/SConscript', exports = ['common_objs', 'alljoyn_core_objs'])
 if ajenv['OS_GROUP'] == 'winrt':
+    winrt_objs = static_objs
+    daemon_progs, bdlib, bdobj = ajenv.SConscript('$OBJDIR/daemon/SConscript', exports = ['winrt_objs'])
     ajenv.Install('$WINRT_DISTDIR/bin', daemon_progs)
     # WinRT needs the full path to the exact file.
     env.Prepend(LIBS = [bdobj, bdlib])
     daemon_obj = [bdobj]
 
 else:
+    daemon_progs, bdlib, bdobj = ajenv.SConscript('$OBJDIR/daemon/SConscript')
     ajenv.Install('$CPP_DISTDIR/bin', daemon_progs)
     ajenv.Install('$CPP_DISTDIR/lib', bdlib)
     daemon_obj = ajenv.Install('$CPP_DISTDIR/lib', bdobj)

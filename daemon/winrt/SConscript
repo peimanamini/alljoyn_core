@@ -14,7 +14,7 @@
 # 
 
 import os
-Import('daemon_env', 'daemon_objs', 'common_objs', 'alljoyn_core_objs', 'bdobj')
+Import('daemon_env', 'daemon_objs')
 
 # Add OS specific daemon_objs
 if daemon_env['ICE'] == 'on':
@@ -33,7 +33,7 @@ if daemon_env['CPU'] == 'arm':
 rsc = daemon_env.RES('DaemonResources.rc')
 
 # Build the Windows daemon.
-alljoyn_libs = daemon_env.SharedLibrary('AllJoyn', daemon_objs + common_objs + alljoyn_core_objs + proximity_objs + os_objs)
+alljoyn_libs = daemon_env.SharedLibrary('AllJoyn', daemon_objs + proximity_objs + os_objs)
 daemon_env.Install('$WINRT_DISTDIR/bin', 'AllJoyn.winmd') #put the *.winmd file in the bin folder
 
 progs = [alljoyn_libs] # alljoyn.dll will be returned

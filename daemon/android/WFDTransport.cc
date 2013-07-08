@@ -3706,7 +3706,7 @@ void WFDTransport::QueueEnableAdvertisement(const qcc::String& advertiseName)
     Alert();
 }
 
-void WFDTransport::DisableAdvertisement(const qcc::String& advertiseName, bool nameListEmpty)
+void WFDTransport::DisableAdvertisement(const qcc::String& advertiseName)
 {
     QCC_DbgTrace(("WFDTransport::DisableAdvertisement()"));
 

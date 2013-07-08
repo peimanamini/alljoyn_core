@@ -255,9 +255,8 @@ class Transport {
      * Stop advertising a well-known name with a given quality of service.
      *
      * @param advertiseName   Well-known name to remove from list of advertised names.
-     * @param nameListEmpty   Indicates whether advertise name list is completely empty (safe to disable OTA advertising).
      */
-    virtual void DisableAdvertisement(const qcc::String& advertiseName, bool nameListEmpty) { }
+    virtual void DisableAdvertisement(const qcc::String& advertiseName) { }
 
     /**
      * Returns the name of the transport

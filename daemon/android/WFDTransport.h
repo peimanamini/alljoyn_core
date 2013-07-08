@@ -224,9 +224,8 @@ class WFDTransport : public Transport, public _RemoteEndpoint::EndpointListener,
      * Stop advertising a well-known name with a given quality of service.
      *
      * @param advertiseName   Well-known name to remove from list of advertised names.
-     * @param nameListEmpty   Indicates whether advertise name list is completely empty (safe to disable OTA advertising).
      */
-    void DisableAdvertisement(const qcc::String& advertiseName, bool nameListEmpty);
+    void DisableAdvertisement(const qcc::String& advertiseName);
 
     /**
      * Returns the name of this transport

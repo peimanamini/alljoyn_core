@@ -323,9 +323,9 @@ QStatus BTTransport::EnableAdvertisement(const qcc::String& advertiseName, bool 
 }
 
 
-void BTTransport::DisableAdvertisement(const qcc::String& advertiseName, bool nameListEmpty)
+void BTTransport::DisableAdvertisement(const qcc::String& advertiseName)
 {
-    QCC_DbgTrace(("BTTransport::DisableAdvertisement(advertiseName = %s, nameListEmpty = %s)", advertiseName.c_str(), nameListEmpty ? "true" : "false"));
+    QCC_DbgTrace(("BTTransport::DisableAdvertisement(advertiseName = %s)", advertiseName.c_str()));
     if (!btmActive) {
         return;
     }

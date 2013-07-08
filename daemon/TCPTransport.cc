@@ -793,7 +793,7 @@ TCPTransport::TCPTransport(BusAttachment& bus)
     : Thread("TCPTransport"), m_bus(bus), m_stopping(false), m_listener(0),
     m_foundCallback(m_listener),
     m_isAdvertising(false), m_isDiscovering(false), m_isListening(false),
-    m_isNsEnabled(false), m_reload(false),
+    m_isNsEnabled(false), m_reload(STATE_RELOADING),
     m_listenPort(0), m_nsReleaseCount(0),
     m_maxUntrustedClients(0), m_numUntrustedClients(0)
 {
@@ -1544,10 +1544,10 @@ void* TCPTransport::Run(void* arg)
          * addresses and ports we are listening on.  If the list changes, the
          * code that does the change Alert()s this thread and we wake up and
          * re-evaluate the list of SocketFds.
-         * Set reload to true to indicate that the set of events has been reloaded.
+         * Set reload to STATE_RELOADED to indicate that the set of events has been reloaded.
          */
         m_listenFdsLock.Lock(MUTEX_CONTEXT);
-        m_reload = true;
+        m_reload = STATE_RELOADED;
         vector<Event*> checkEvents, signaledEvents;
         checkEvents.push_back(&stopEvent);
         for (list<pair<qcc::String, SocketFd> >::const_iterator i = m_listenFds.begin(); i != m_listenFds.end(); ++i) {
@@ -1691,6 +1691,8 @@ void* TCPTransport::Run(void* arg)
      * get rid of them.  We don't have to take the list lock since a Stop()
      * request to the TCPTransport is required to lock out any new
      * requests that may possibly touch the listen FDs list.
+     * Set m_reload to STATE_EXITED to indicate that the TCPTransport::Run
+     * thread has exited.
      */
     m_listenFdsLock.Lock(MUTEX_CONTEXT);
     for (list<pair<qcc::String, SocketFd> >::iterator i = m_listenFds.begin(); i != m_listenFds.end(); ++i) {
@@ -1698,6 +1700,7 @@ void* TCPTransport::Run(void* arg)
         qcc::Close(i->second);
     }
     m_listenFds.clear();
+    m_reload = STATE_EXITED;
     m_listenFdsLock.Unlock(MUTEX_CONTEXT);
 
     QCC_DbgPrintf(("TCPTransport::Run is exiting status=%s", QCC_StatusText(status)));
@@ -3322,8 +3325,7 @@ QStatus TCPTransport::UntrustedClientStart() {
         m_numUntrustedClients--;
     }
     if (m_numUntrustedClients >= m_maxUntrustedClients) {
-        /* Since the second param is currently unused, set it to false */
-        DisableAdvertisement(routerName, false);
+        DisableAdvertisement(routerName);
     }
     m_listenRequestsLock.Unlock();
     return status;
@@ -3445,29 +3447,38 @@ void TCPTransport::DoStopListen(qcc::String& normSpec)
         }
     }
 
-    /* Set m_reload to false, unlock the mutex, alert the main Run thread that
-     * there is a change and wait for the Run thread to finish any connections
-     * it may be accepting and then reload the set of events. If the
-     * TCPTransport::Run thread is not running, exit the loop.
-     */
-    m_reload = false;
-    m_listenFdsLock.Unlock(MUTEX_CONTEXT);
-
     if (found) {
-        Alert();
+        if (m_reload != STATE_EXITED) {
+            /* If the TCPTransport::Run thread is still running, set m_reload to
+             * STATE_RELOADING, unlock the mutex, alert the main Run thread that
+             * there is a change and wait for the Run thread to finish any connections
+             * it may be accepting and then reload the set of events.
+             */
 
-        while (IsRunning() && !m_reload) {
-            qcc::Sleep(2);
+
+            m_reload = STATE_RELOADING;
+
+            Alert();
+
+            /* Wait until TCPTransport::Run thread has reloaded the
+             * set of events or exited.
+             */
+            while (m_reload == STATE_RELOADING) {
+                m_listenFdsLock.Unlock(MUTEX_CONTEXT);
+                qcc::Sleep(2);
+                m_listenFdsLock.Lock(MUTEX_CONTEXT);
+            }
         }
         /*
          * If we took a socketFD off of the list of active FDs, we need to tear it
-         * down and alert the server accept loop that the list of FDs on which it
-         * is listening has changed.
+         * down.
          */
 
         qcc::Shutdown(stopFd);
         qcc::Close(stopFd);
     }
+    m_listenFdsLock.Unlock(MUTEX_CONTEXT);
+
 }
 
 bool TCPTransport::NewDiscoveryOp(DiscoveryOp op, qcc::String namePrefix, bool& isFirst)
@@ -3662,7 +3673,7 @@ void TCPTransport::QueueEnableAdvertisement(const qcc::String& advertiseName, bo
     m_listenRequestsLock.Unlock(MUTEX_CONTEXT);
 }
 
-void TCPTransport::DisableAdvertisement(const qcc::String& advertiseName, bool nameListEmpty)
+void TCPTransport::DisableAdvertisement(const qcc::String& advertiseName)
 {
     QCC_DbgPrintf(("TCPTransport::DisableAdvertisement()"));
 

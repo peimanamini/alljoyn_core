@@ -2556,7 +2556,7 @@ QStatus DaemonICETransport::EnableAdvertisement(const String& advertiseName, boo
     return status;
 }
 
-void DaemonICETransport::DisableAdvertisement(const String& advertiseName, bool nameListEmpty)
+void DaemonICETransport::DisableAdvertisement(const String& advertiseName)
 {
     /*
      * We only want to allow this call to proceed if we have a running Run

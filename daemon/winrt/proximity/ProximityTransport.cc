@@ -2782,7 +2782,7 @@ void ProximityTransport::QueueEnableAdvertisement(const qcc::String& advertiseNa
     Alert();
 }
 
-void ProximityTransport::DisableAdvertisement(const qcc::String& advertiseName, bool nameListEmpty)
+void ProximityTransport::DisableAdvertisement(const qcc::String& advertiseName)
 {
     QCC_DbgPrintf(("ProximityTransport::DisableAdvertisement()"));
 

@@ -1480,6 +1480,9 @@ QStatus IpNameServiceImpl::Enabled(TransportMask transportMask,
 
 QStatus IpNameServiceImpl::FindAdvertisedName(TransportMask transportMask, const qcc::String& wkn, LocatePolicy policy)
 {
+    // Maximum number of IpNameService protocol messages that can be queued.
+    static const size_t MAX_RETRY_MESSAGES = 50;
+
     QCC_DbgHLPrintf(("IpNameServiceImpl::FindAdvertisedName(0x%x, \"%s\", %d)", transportMask, wkn.c_str(), policy));
 
     //
@@ -1544,7 +1547,34 @@ QStatus IpNameServiceImpl::FindAdvertisedName(TransportMask transportMask, const
         //
         // printf("%s: m_mutex.Lock()\n", __FUNCTION__);
         m_mutex.Lock();
-        m_retry.push_back(header);
+
+        // First check if this wkn is already in the m_retry list.
+        // In that case, just update the Retries for it.
+        bool found = false;
+        std::list<Header>::iterator it = m_retry.begin();
+        while (it != m_retry.end()) {
+            if ((*it).GetQuestion(0).GetName(0) == wkn) {
+                uint32_t nsVersion;
+                uint32_t msgVersion;
+                (*it).GetVersion(nsVersion, msgVersion);
+                if (nsVersion == 0 && msgVersion == 0) {
+                    (*it).SetRetries(0);
+                    found = true;
+                    break;
+                }
+            }
+            it++;
+
+        }
+        // If the entry wasnt found, add a new one.
+        if (!found) {
+            while (m_retry.size() >= MAX_RETRY_MESSAGES) {
+                m_mutex.Unlock();
+                qcc::Sleep(10);
+                m_mutex.Lock();
+            }
+            m_retry.push_back(header);
+        }
         // printf("%s: m_mutex.Unlock()\n", __FUNCTION__);
         m_mutex.Unlock();
 
@@ -1579,7 +1609,34 @@ QStatus IpNameServiceImpl::FindAdvertisedName(TransportMask transportMask, const
         //
         // printf("%s: m_mutex.Lock()\n", __FUNCTION__);
         m_mutex.Lock();
-        m_retry.push_back(header);
+
+        // First check if this wkn is already in the m_retry list.
+        // In that case, just update the Retries for it.
+        bool found = false;
+        std::list<Header>::iterator it = m_retry.begin();
+        while (it != m_retry.end()) {
+            if ((*it).GetQuestion(0).GetName(0) == wkn) {
+                uint32_t nsVersion;
+                uint32_t msgVersion;
+                (*it).GetVersion(nsVersion, msgVersion);
+                if (nsVersion == 1 && msgVersion == 1) {
+                    (*it).SetRetries(0);
+                    found = true;
+                    break;
+                }
+            }
+            it++;
+        }
+        // If the entry wasnt found, add a new one.
+        if (!found) {
+            while (m_retry.size() >= MAX_RETRY_MESSAGES) {
+                m_mutex.Unlock();
+                qcc::Sleep(10);
+                m_mutex.Lock();
+            }
+            m_retry.push_back(header);
+        }
+
         // printf("%s: m_mutex.Unlock()\n", __FUNCTION__);
         m_mutex.Unlock();
 
@@ -2310,9 +2367,10 @@ void IpNameServiceImpl::QueueProtocolMessage(Header& header)
 
     // printf("%s: m_mutex.Lock()\n", __FUNCTION__);
     m_mutex.Lock();
-    if (m_outbound.size() > MAX_IPNS_MESSAGES) {
+    while (m_outbound.size() >= MAX_IPNS_MESSAGES) {
         m_mutex.Unlock();
-        return;
+        qcc::Sleep(10);
+        m_mutex.Lock();
     }
     m_outbound.push_back(header);
     m_wakeEvent.SetEvent();
@@ -3264,16 +3322,15 @@ void IpNameServiceImpl::SendOutboundMessageActively(Header& header)
 void IpNameServiceImpl::SendOutboundMessages(void)
 {
     QCC_DbgPrintf(("IpNameServiceImpl::SendOutboundMessages()"));
-
+    int count =  m_outbound.size();
     //
     // Send any messages we have queued for transmission.  We expect to be
     // called with the mutex locked so we can wander around in the various
     // protected data structures freely.
     //
-    while (m_outbound.size() && (m_state == IMPL_RUNNING || m_terminal)) {
+    while ((count) && (m_state == IMPL_RUNNING || m_terminal)) {
 
-        QCC_DbgPrintf(("IpNameServiceImpl::SendOutboundMessages(): m_outbound.size() == %d.", m_outbound.size()));
-
+        count--;
         //
         // Pull a message off of the outbound queue.  What we get is a
         // header object that will tie together a number of "question"
@@ -3435,7 +3492,6 @@ void* IpNameServiceImpl::Run(void* arg)
             tLastLazyUpdate = tNow;
             m_forceLazyUpdate = false;
         }
-
         SendOutboundMessages();
 
         //
@@ -3496,7 +3552,6 @@ void* IpNameServiceImpl::Run(void* arg)
             QCC_LogError(status, ("IpNameServiceImpl::Run(): Event::Wait(): Failed"));
             break;
         }
-
         //
         // Loop over the events for which we expect something has happened
         //
@@ -3545,7 +3600,6 @@ void* IpNameServiceImpl::Run(void* arg)
                 // to do any protocol maintenance, like retransmitting queued
                 // advertisements.
                 //
-
                 DoPeriodicMaintenance();
             } else if (*i == &m_wakeEvent) {
                 QCC_DbgPrintf(("IpNameServiceImpl::Run(): Wake event fired"));
@@ -3641,7 +3695,12 @@ void IpNameServiceImpl::Retry(void)
             //
             // Send the message out over the multicast link (again).
             //
-            QueueProtocolMessage(*i);
+            if ((*i).DestinationSet()) {
+                SendOutboundMessageQuietly(*i);
+            } else {
+                SendOutboundMessageActively(*i);
+            }
+            qcc::Sleep(rand() % 128);
 
             uint32_t count = (*i).GetRetries();
             ++count;
@@ -3828,11 +3887,14 @@ void IpNameServiceImpl::Retransmit(uint32_t transportIndex, bool exiting, bool q
 
                 if (quietly) {
                     header.SetDestination(destination);
+                    SendOutboundMessageQuietly(header);
                 } else {
                     header.ClearDestination();
+                    SendOutboundMessageActively(header);
                 }
 
-                QueueProtocolMessage(header);
+                qcc::Sleep(rand() % 128);
+
                 ++nSent;
 
                 //
@@ -3866,7 +3928,10 @@ void IpNameServiceImpl::Retransmit(uint32_t transportIndex, bool exiting, bool q
         header.AddAnswer(isAt);
 
         header.ClearDestination();
-        QueueProtocolMessage(header);
+        SendOutboundMessageActively(header);
+
+        qcc::Sleep(rand() % 128);
+
     }
 
     //
@@ -3990,11 +4055,14 @@ void IpNameServiceImpl::Retransmit(uint32_t transportIndex, bool exiting, bool q
 
                 if (quietly) {
                     header.SetDestination(destination);
+                    SendOutboundMessageQuietly(header);
                 } else {
                     header.ClearDestination();
+                    SendOutboundMessageActively(header);
                 }
 
-                QueueProtocolMessage(header);
+                qcc::Sleep(rand() % 128);
+
                 ++nSent;
 
                 //
@@ -4026,11 +4094,14 @@ void IpNameServiceImpl::Retransmit(uint32_t transportIndex, bool exiting, bool q
 
                     if (quietly) {
                         header.SetDestination(destination);
+                        SendOutboundMessageQuietly(header);
                     } else {
                         header.ClearDestination();
+                        SendOutboundMessageActively(header);
                     }
 
-                    QueueProtocolMessage(header);
+                    qcc::Sleep(rand() % 128);
+
                     ++nSent;
 
                     QCC_DbgPrintf(("IpNameServiceImpl::Retransmit(): Resetting current list"));
@@ -4061,11 +4132,13 @@ void IpNameServiceImpl::Retransmit(uint32_t transportIndex, bool exiting, bool q
 
         if (quietly) {
             header.SetDestination(destination);
+            SendOutboundMessageQuietly(header);
         } else {
             header.ClearDestination();
+            SendOutboundMessageActively(header);
         }
+        qcc::Sleep(rand() % 128);
 
-        QueueProtocolMessage(header);
     }
 
     // printf("%s: m_mutex.Unlock()\n", __FUNCTION__);

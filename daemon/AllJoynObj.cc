@@ -74,12 +74,10 @@ void AllJoynObj::AcquireLocks()
      * this method may already have the name table lock
      */
     router.LockNameTable();
-    stateLock.Lock(MUTEX_CONTEXT);
 }
 
 void AllJoynObj::ReleaseLocks()
 {
-    stateLock.Unlock(MUTEX_CONTEXT);
     router.UnlockNameTable();
 }
 
@@ -2598,6 +2596,8 @@ void AllJoynObj::AdvertiseName(const InterfaceDescription::Member* member, Messa
                 } else {
                     it->second.first |= transports;
                 }
+                stateLock.Lock(MUTEX_CONTEXT);
+                ReleaseLocks();
 
                 /* Advertise on transports specified */
                 TransportList& transList = bus.GetInternal().GetTransportList();
@@ -2613,8 +2613,11 @@ void AllJoynObj::AdvertiseName(const InterfaceDescription::Member* member, Messa
                         QCC_LogError(ER_BUS_TRANSPORT_NOT_AVAILABLE, ("NULL transport pointer found in transportList"));
                     }
                 }
+                stateLock.Unlock(MUTEX_CONTEXT);
+
+            } else {
+                ReleaseLocks();
             }
-            ReleaseLocks();
         } else {
             replyCode = ALLJOYN_ADVERTISENAME_REPLY_FAILED;
         }
@@ -2716,13 +2719,16 @@ QStatus AllJoynObj::ProcCancelAdvertise(const qcc::String& sender, const qcc::St
         cancelMask &= origMask;
     }
 
+    stateLock.Lock(MUTEX_CONTEXT);
+    ReleaseLocks();
+
     /* Cancel transport advertisement if no other refs exist */
     if (foundAdvert && cancelMask) {
         TransportList& transList = bus.GetInternal().GetTransportList();
         for (size_t i = 0; i < transList.GetNumTransports(); ++i) {
             Transport* trans = transList.GetTransport(i);
             if (trans && (trans->GetTransportMask() & cancelMask)) {
-                trans->DisableAdvertisement(advertiseName, advertiseMap.empty());
+                trans->DisableAdvertisement(advertiseName);
             } else if (!trans) {
                 QCC_LogError(ER_BUS_TRANSPORT_NOT_AVAILABLE, ("NULL transport pointer found in transportList"));
             }
@@ -2731,7 +2737,7 @@ QStatus AllJoynObj::ProcCancelAdvertise(const qcc::String& sender, const qcc::St
     } else if (!foundAdvert) {
         status = ER_FAIL;
     }
-    ReleaseLocks();
+    stateLock.Unlock(MUTEX_CONTEXT);
 
     /* Remove advertisement from local nameMap so local discoverers are notified of advertisement going away */
     if ((status == ER_OK) && (transports & TRANSPORT_LOCAL)) {
@@ -2824,6 +2830,8 @@ void AllJoynObj::ProcFindAdvertisedName(Message& msg, bool isAnyTrans)
     /* Find out the transports on which discovery needs to be enabled for this name.
      * i.e. The ones that are set in the requested transport mask and not set in the origMask.
      */
+    stateLock.Lock(MUTEX_CONTEXT);
+    ReleaseLocks();
     enableMask = transports & ~origMask;
     if (ALLJOYN_FINDADVERTISEDNAME_REPLY_SUCCESS == replyCode) {
         /* Find name on all remote transports */
@@ -2837,7 +2845,7 @@ void AllJoynObj::ProcFindAdvertisedName(Message& msg, bool isAnyTrans)
             }
         }
     }
-    ReleaseLocks();
+    stateLock.Unlock(MUTEX_CONTEXT);
 
     /* Reply to request */
     MsgArg replyArg("u", replyCode);
@@ -2954,6 +2962,10 @@ QStatus AllJoynObj::ProcCancelFindName(const qcc::String& sender, const qcc::Str
     if (foundFinder) {
         cancelMask &= origMask;
     }
+
+    stateLock.Lock(MUTEX_CONTEXT);
+    ReleaseLocks();
+
     /* Disable discovery if certain transports are no longer referenced for the name prefix */
     if (foundFinder && cancelMask) {
         TransportList& transList = bus.GetInternal().GetTransportList();
@@ -2966,7 +2978,7 @@ QStatus AllJoynObj::ProcCancelFindName(const qcc::String& sender, const qcc::Str
     } else if (!foundFinder) {
         status = ER_FAIL;
     }
-    ReleaseLocks();
+    stateLock.Unlock(MUTEX_CONTEXT);
     return status;
 }
 

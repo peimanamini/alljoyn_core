@@ -219,9 +219,8 @@ class TCPTransport : public Transport, public _RemoteEndpoint::EndpointListener,
      * Stop advertising a well-known name with a given quality of service.
      *
      * @param advertiseName   Well-known name to remove from list of advertised names.
-     * @param nameListEmpty   Indicates whether advertise name list is completely empty (safe to disable OTA advertising).
      */
-    void DisableAdvertisement(const qcc::String& advertiseName, bool nameListEmpty);
+    void DisableAdvertisement(const qcc::String& advertiseName);
 
     /**
      * Returns the name of this transport
@@ -648,7 +647,14 @@ class TCPTransport : public Transport, public _RemoteEndpoint::EndpointListener,
     bool m_isDiscovering;
     bool m_isListening;
     bool m_isNsEnabled;
-    bool m_reload;             /**< Flag used for synchronization of DoStopListen with the Run thread */
+
+    enum State {
+        STATE_RELOADING = 0,    /**< The set of listen FDs has changed and needs to be reloaded by the main thread */
+        STATE_RELOADED,         /**< The set of listen FDs has been reloaded by the main thread */
+        STATE_EXITED            /**< The main TCPTransport thread has exited */
+    };
+
+    State m_reload;             /**< Flag used for synchronization of DoStopListen with the Run thread */
 
     uint16_t m_listenPort;     /**< If m_isListening, is the port on which we are listening */
 

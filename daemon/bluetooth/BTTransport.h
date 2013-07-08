@@ -314,9 +314,8 @@ class BTTransport :
      * Stop advertising a well-known name with a given quality of service.
      *
      * @param advertiseName   Well-known name to remove from list of advertised names.
-     * @param nameListEmpty   Indicates whether advertise name list is completely empty (safe to disable OTA advertising).
      */
-    void DisableAdvertisement(const qcc::String& advertiseName, bool nameListEmpty);
+    void DisableAdvertisement(const qcc::String& advertiseName);
 
     /**
      * Indicates whether this transport is used for client-to-bus or bus-to-bus connections.

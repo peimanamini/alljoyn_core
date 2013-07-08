@@ -297,13 +297,16 @@ class SessionlessObj : public BusObject, public NameListener, public SessionList
     /** Track the changeIds of the advertisments coming from other daemons */
     struct ChangeIdEntry {
       public:
-        ChangeIdEntry(const char* advName, TransportMask transport, uint32_t changeId, bool inProgress, uint32_t retries) :
-            advName(advName), transport(transport), changeId(changeId), inProgress(inProgress), retries(retries), catchupList() { }
+        ChangeIdEntry(const char* advName, TransportMask transport, uint32_t changeId, uint32_t advChangeId, uint64_t nextJoinTimestamp) :
+            advName(advName), transport(transport), changeId(changeId), advChangeId(advChangeId), nextJoinTimestamp(nextJoinTimestamp), retries(0), inProgress(false), sessionId(0), catchupList() { }
         qcc::String advName;
         TransportMask transport;
         uint32_t changeId;
-        bool inProgress;
+        uint32_t advChangeId;
+        uint64_t nextJoinTimestamp;
         uint32_t retries;
+        bool inProgress;
+        SessionId sessionId;
         std::queue<CatchupState> catchupList;
     };
     /** Map remote guid to ChangeIdEntry */

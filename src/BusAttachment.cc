@@ -1808,7 +1808,7 @@ void BusAttachment::Internal::SetLinkTimeoutAsyncCB(Message& reply, void* contex
         status = bus.GetLinkTimeoutResponse(reply, timeout);
     } else if (reply->GetType() == MESSAGE_ERROR) {
         status = ER_BUS_REPLY_IS_ERROR_MESSAGE;
-        QCC_LogError(status, ("%s.JoinSession returned ERROR_MESSAGE (error=%s)", org::alljoyn::Bus::InterfaceName, reply->GetErrorDescription().c_str()));
+        QCC_LogError(status, ("%s.SetLinkTimeout returned ERROR_MESSAGE (error=%s)", org::alljoyn::Bus::InterfaceName, reply->GetErrorDescription().c_str()));
     }
 
     /* Call the user's callback */

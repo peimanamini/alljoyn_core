@@ -5,7 +5,7 @@
  */
 
 /******************************************************************************
- * Copyright 2010-2012, Qualcomm Innovation Center, Inc.
+ * Copyright 2010-2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -835,6 +835,7 @@ QStatus AllJoynPeerObj::AuthenticatePeer(AllJoynMessageType msgType, const qcc::
     lock.Unlock(MUTEX_CONTEXT);
 
     KeyStore& keyStore = bus->GetInternal().GetKeyStore();
+    bool authTried = false;
     bool firstPass = true;
     do {
         /*
@@ -890,6 +891,10 @@ QStatus AllJoynPeerObj::AuthenticatePeer(AllJoynMessageType msgType, const qcc::
          */
         SASLEngine sasl(*bus, ajn::AuthMechanism::RESPONDER, peerAuthMechanisms, busName.c_str(), peerAuthListener);
         sasl.SetLocalId(localGuidStr);
+        /*
+         * This will let us know if we need to make an AuthenticationComplete callback below.
+         */
+        authTried = true;
         qcc::String inStr;
         qcc::String outStr;
         status = sasl.Advance(inStr, outStr, authState);
@@ -963,9 +968,11 @@ QStatus AllJoynPeerObj::AuthenticatePeer(AllJoynMessageType msgType, const qcc::
         }
     }
     /*
-     * Report the authentication completion to allow application to clear UI etc.
+     * If an authentication was tried report the authentication completion to allow application to clear UI etc.
      */
-    peerAuthListener.AuthenticationComplete(mech.c_str(), sender.c_str(), status == ER_OK);
+    if (authTried) {
+        peerAuthListener.AuthenticationComplete(mech.c_str(), sender.c_str(), status == ER_OK);
+    }
     /*
      * ER_BUS_REPLY_IS_ERROR_MESSAGE has a specific meaning in the public API an should not be
      * propogated to the caller from this context.

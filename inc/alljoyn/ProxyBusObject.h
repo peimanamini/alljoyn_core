@@ -8,7 +8,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2012, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -128,7 +128,8 @@ class ProxyBusObject : public MessageReceiver {
      * actual remote object implements with the exception that org.freedesktop.DBus.Peer
      * interface is special-cased (per the DBus spec) and can always be called on any object. Nor
      * does it contain information about the child objects that the actual remote object might
-     * contain.
+     * contain. The security mode can be specified if known or can be derived from the XML
+     * description.
      *
      * See also these sample file(s): @n
      * simple/android/client/jni/Client_jni.cpp @n
@@ -155,8 +156,9 @@ class ProxyBusObject : public MessageReceiver {
      * @param service    The remote service name (well-known or unique).
      * @param path       The absolute (non-relative) object path for the remote object.
      * @param sessionId  The session id the be used for communicating with remote object.
+     * @param secure     The security mode for the remote object.
      */
-    ProxyBusObject(BusAttachment& bus, const char* service, const char* path, SessionId sessionId);
+    ProxyBusObject(BusAttachment& bus, const char* service, const char* path, SessionId sessionId, bool secure = false);
 
     /**
      *  %ProxyBusObject destructor.
@@ -920,6 +922,13 @@ class ProxyBusObject : public MessageReceiver {
      */
     bool IsValid() const { return bus != NULL; }
 
+    /**
+     * Indicates if the remote object for this proxy bus object is secure.
+     *
+     * @return  true if the object is secure
+     */
+    bool IsSecure() const { return isSecure; }
+
   private:
 
     /**
@@ -1010,9 +1019,10 @@ class ProxyBusObject : public MessageReceiver {
     qcc::String serviceName;    /**< Remote destination */
     SessionId sessionId;        /**< Session to use for communicating with remote object */
     bool hasProperties;         /**< True if proxy object implements properties */
-    mutable RemoteEndpoint b2bEp;      /**< B2B endpoint to use or NULL to indicates normal sessionId based routing */
+    mutable RemoteEndpoint b2bEp; /**< B2B endpoint to use or NULL to indicates normal sessionId based routing */
     mutable qcc::Mutex* lock;   /**< Lock that protects access to components member */
     bool isExiting;             /**< true iff ProxyBusObject is in the process of begin destroyed */
+    bool isSecure;              /**< Indicates if this object is secure or not */
 };
 
 /**

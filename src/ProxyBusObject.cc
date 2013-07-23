@@ -82,6 +82,16 @@ template <typename _cbType> struct CBContext {
     void* context;
 };
 
+static inline bool SecurityApplies(const ProxyBusObject* obj, const InterfaceDescription* ifc)
+{
+    InterfaceSecurityPolicy ifcSec = ifc->GetSecurityPolicy();
+    if (ifcSec == AJ_IFC_SECURITY_REQUIRED) {
+        return true;
+    } else {
+        return obj->IsSecure() && (ifcSec != AJ_IFC_SECURITY_OFF);
+    }
+}
+
 QStatus ProxyBusObject::GetAllProperties(const char* iface, MsgArg& value, uint32_t timeout) const
 {
     QStatus status;
@@ -90,7 +100,10 @@ QStatus ProxyBusObject::GetAllProperties(const char* iface, MsgArg& value, uint3
         status = ER_BUS_OBJECT_NO_SUCH_INTERFACE;
     } else {
         uint8_t flags = 0;
-        if (valueIface->IsSecure()) {
+        /*
+         * If the object or the property interface is secure method call must be encrypted.
+         */
+        if (SecurityApplies(this, valueIface)) {
             flags |= ALLJOYN_FLAG_ENCRYPTED;
         }
         Message reply(*bus);
@@ -142,7 +155,10 @@ QStatus ProxyBusObject::GetAllPropertiesAsync(const char* iface,
         status = ER_BUS_OBJECT_NO_SUCH_INTERFACE;
     } else {
         uint8_t flags = 0;
-        if (valueIface->IsSecure()) {
+        /*
+         * If the object or the property interface is secure method call must be encrypted.
+         */
+        if (SecurityApplies(this, valueIface)) {
             flags |= ALLJOYN_FLAG_ENCRYPTED;
         }
         MsgArg arg = MsgArg("s", iface);
@@ -175,7 +191,10 @@ QStatus ProxyBusObject::GetProperty(const char* iface, const char* property, Msg
         status = ER_BUS_OBJECT_NO_SUCH_INTERFACE;
     } else {
         uint8_t flags = 0;
-        if (valueIface->IsSecure()) {
+        /*
+         * If the object or the property interface is secure method call must be encrypted.
+         */
+        if (SecurityApplies(this, valueIface)) {
             flags |= ALLJOYN_FLAG_ENCRYPTED;
         }
         Message reply(*bus);
@@ -230,7 +249,7 @@ QStatus ProxyBusObject::GetPropertyAsync(const char* iface,
         status = ER_BUS_OBJECT_NO_SUCH_INTERFACE;
     } else {
         uint8_t flags = 0;
-        if (valueIface->IsSecure()) {
+        if (SecurityApplies(this, valueIface)) {
             flags |= ALLJOYN_FLAG_ENCRYPTED;
         }
         MsgArg inArgs[2];
@@ -265,7 +284,10 @@ QStatus ProxyBusObject::SetProperty(const char* iface, const char* property, Msg
         status = ER_BUS_OBJECT_NO_SUCH_INTERFACE;
     } else {
         uint8_t flags = 0;
-        if (valueIface->IsSecure()) {
+        /*
+         * If the object or the property interface is secure method call must be encrypted.
+         */
+        if (SecurityApplies(this, valueIface)) {
             flags |= ALLJOYN_FLAG_ENCRYPTED;
         }
         Message reply(*bus);
@@ -321,7 +343,7 @@ QStatus ProxyBusObject::SetPropertyAsync(const char* iface,
         status = ER_BUS_OBJECT_NO_SUCH_INTERFACE;
     } else {
         uint8_t flags = 0;
-        if (valueIface->IsSecure()) {
+        if (SecurityApplies(this, valueIface)) {
             flags |= ALLJOYN_FLAG_ENCRYPTED;
         }
         MsgArg inArgs[3];
@@ -648,7 +670,7 @@ QStatus ProxyBusObject::MethodCallAsync(const InterfaceDescription::Member& meth
     /*
      * If the interface is secure or encryption is explicitly rerquested the method call must be encrypted.
      */
-    if (method.iface->IsSecure()) {
+    if (SecurityApplies(this, method.iface)) {
         flags |= ALLJOYN_FLAG_ENCRYPTED;
     }
     if ((flags & ALLJOYN_FLAG_ENCRYPTED) && !bus->IsPeerSecurityEnabled()) {
@@ -749,9 +771,9 @@ QStatus ProxyBusObject::MethodCall(const InterfaceDescription::Member& method,
         goto MethodCallExit;
     }
     /*
-     * If the interface is secure or encryption is explicitly requested the method call must be encrypted.
+     * If the object or interface is secure or encryption is explicitly requested the method call must be encrypted.
      */
-    if (method.iface->IsSecure()) {
+    if (SecurityApplies(this, method.iface)) {
         flags |= ALLJOYN_FLAG_ENCRYPTED;
     }
     if ((flags & ALLJOYN_FLAG_ENCRYPTED) && !bus->IsPeerSecurityEnabled()) {
@@ -1056,7 +1078,7 @@ void ProxyBusObject::DestructComponents()
     }
 }
 
-ProxyBusObject::ProxyBusObject(BusAttachment& bus, const char* service, const char* path, SessionId sessionId) :
+ProxyBusObject::ProxyBusObject(BusAttachment& bus, const char* service, const char* path, SessionId sessionId, bool isSecure) :
     bus(&bus),
     components(new Components),
     path(path),
@@ -1064,7 +1086,8 @@ ProxyBusObject::ProxyBusObject(BusAttachment& bus, const char* service, const ch
     sessionId(sessionId),
     hasProperties(false),
     lock(new Mutex),
-    isExiting(false)
+    isExiting(false),
+    isSecure(isSecure)
 {
     /* The Peer interface is implicitly defined for all objects */
     AddInterface(org::freedesktop::DBus::Peer::InterfaceName);
@@ -1076,7 +1099,8 @@ ProxyBusObject::ProxyBusObject() :
     sessionId(0),
     hasProperties(false),
     lock(NULL),
-    isExiting(false)
+    isExiting(false),
+    isSecure(false)
 {
 }
 
@@ -1089,7 +1113,8 @@ ProxyBusObject::ProxyBusObject(const ProxyBusObject& other) :
     hasProperties(other.hasProperties),
     b2bEp(other.b2bEp),
     lock(new Mutex),
-    isExiting(false)
+    isExiting(false),
+    isSecure(other.isSecure)
 {
     *components = *other.components;
 }
@@ -1118,6 +1143,7 @@ ProxyBusObject& ProxyBusObject::operator=(const ProxyBusObject& other)
         hasProperties = other.hasProperties;
         b2bEp = other.b2bEp;
         isExiting = false;
+        isSecure = other.isSecure;
     }
     return *this;
 }

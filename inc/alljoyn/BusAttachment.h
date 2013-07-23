@@ -41,6 +41,7 @@
 
 namespace ajn {
 
+
 /**
  * %BusAttachment is the top-level object responsible for connecting to and optionally managing a message bus.
  */
@@ -236,14 +237,32 @@ class BusAttachment : public MessageReceiver {
      * @param[out] iface
      *      - Interface description
      *      - NULL if cannot be created.
+     * @param secPolicy The security policy for this interface
+     *
+     * @return
+     *      - #ER_OK if creation was successful.
+     *      - #ER_BUS_IFACE_ALREADY_EXISTS if requested interface already exists
+     *
+     * @see ProxyBusObject::IntrospectRemoteObject, InterfaceDescription::Activate, BusAttachment::GetInterface
+     */
+    QStatus CreateInterface(const char* name, InterfaceDescription*& iface, InterfaceSecurityPolicy secPolicy);
+
+    /**
+     * Deprecated API for creating an interface description with a given name.
+     *
+     * @param name   The requested interface name.
+     * @param[out] iface
+     *      - Interface description
+     *      - NULL if cannot be created.
      * @param secure If true the interface is secure and method calls and signals will be encrypted.
      *
      * @return
      *      - #ER_OK if creation was successful.
      *      - #ER_BUS_IFACE_ALREADY_EXISTS if requested interface already exists
-     * @see ProxyBusObject::IntrospectRemoteObject, InterfaceDescription::Activate, BusAttachment::GetInterface
      */
-    QStatus CreateInterface(const char* name, InterfaceDescription*& iface, bool secure = false);
+    QStatus CreateInterface(const char* name, InterfaceDescription*& iface, bool secure = false) {
+        return CreateInterface(name, iface, secure ? AJ_IFC_SECURITY_REQUIRED : AJ_IFC_SECURITY_INHERIT);
+    }
 
     /**
      * Initialize one more interface descriptions from an XML string in DBus introspection format.
@@ -681,6 +700,7 @@ class BusAttachment : public MessageReceiver {
      * Register a BusObject
      *
      * @param obj      BusObject to register.
+     * @param secure   true if authentication is required to access this object.
      *
      * See also these sample file(s): @n
      * basic/basic_service.cc @n
@@ -716,7 +736,7 @@ class BusAttachment : public MessageReceiver {
      *      - #ER_OK if successful.
      *      - #ER_BUS_BAD_OBJ_PATH for a bad object path
      */
-    QStatus RegisterBusObject(BusObject& obj);
+    QStatus RegisterBusObject(BusObject& obj, bool secure = false);
 
     /**
      * Unregister a BusObject

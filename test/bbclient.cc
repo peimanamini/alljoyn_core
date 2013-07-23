@@ -4,7 +4,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2012, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -168,6 +168,8 @@ static void usage(void)
     printf("   -c <count>                = Number of pings to send to the server\n");
     printf("   -i                        = Use introspection to discover remote interfaces\n");
     printf("   -e[k] [RSA|SRP|PIN|LOGON] = Encrypt the test interface using specified auth mechanism, -ek means clear keys\n");
+    printf("   -en                       = Interface security is N/A\n");
+    printf("   -eo                       = Enable object security\n");
     printf("   -a #                      = Max authentication attempts\n");
     printf("   -kx #                     = Authentication key expiration (seconds)\n");
     printf("   -r #                      = AllJoyn attachment restart count\n");
@@ -349,7 +351,7 @@ int main(int argc, char** argv)
 {
     QStatus status = ER_OK;
     bool useIntrospection = false;
-    bool encryptIfc = false;
+    InterfaceSecurityPolicy secPolicy = AJ_IFC_SECURITY_INHERIT;
     bool clearKeys = false;
     qcc::String authMechs;
     qcc::String pbusConnect;
@@ -369,6 +371,7 @@ int main(int argc, char** argv)
     uint32_t pingInterval = 0;
     bool waitForSigint = false;
     bool roundtrip = false;
+    bool objSecure = false;
 
     printf("AllJoyn Library version: %s\n", ajn::GetVersion());
     printf("AllJoyn Library build info: %s\n", ajn::GetBuildInfo());
@@ -392,12 +395,16 @@ int main(int argc, char** argv)
                 usage();
                 exit(1);
             }
+        } else if ((0 == strcmp("-eo", argv[i]))) {
+            objSecure = true;
+        } else if ((0 == strcmp("-en", argv[i]))) {
+            secPolicy = AJ_IFC_SECURITY_OFF;
         } else if ((0 == strcmp("-e", argv[i])) || (0 == strcmp("-ek", argv[i]))) {
             if (!authMechs.empty()) {
                 authMechs += " ";
             }
             bool ok = false;
-            encryptIfc = true;
+            secPolicy = AJ_IFC_SECURITY_REQUIRED;
             clearKeys |= (argv[i][2] == 'k');
             ++i;
             if (i != argc) {
@@ -550,7 +557,7 @@ int main(int argc, char** argv)
         if (!useIntrospection) {
             /* Add org.alljoyn.alljoyn_test interface */
             InterfaceDescription* testIntf = NULL;
-            status = g_msgBus->CreateInterface(::org::alljoyn::alljoyn_test::InterfaceName, testIntf, encryptIfc);
+            status = g_msgBus->CreateInterface(::org::alljoyn::alljoyn_test::InterfaceName, testIntf, secPolicy);
             if ((ER_OK == status) && testIntf) {
                 testIntf->AddSignal("my_signal", NULL, NULL, 0);
                 testIntf->AddMethod("my_ping", "s", "s", "outStr,inStr", 0);
@@ -565,7 +572,7 @@ int main(int argc, char** argv)
             if (ER_OK == status) {
                 /* Add org.alljoyn.alljoyn_test.values interface */
                 InterfaceDescription* valuesIntf = NULL;
-                status = g_msgBus->CreateInterface(::org::alljoyn::alljoyn_test::values::InterfaceName, valuesIntf, encryptIfc);
+                status = g_msgBus->CreateInterface(::org::alljoyn::alljoyn_test::values::InterfaceName, valuesIntf, secPolicy);
                 if ((ER_OK == status) && valuesIntf) {
                     valuesIntf->AddProperty("int_val", "i", PROP_ACCESS_RW);
                     valuesIntf->AddProperty("str_val", "s", PROP_ACCESS_RW);
@@ -588,7 +595,7 @@ int main(int argc, char** argv)
         if (ER_OK == status) {
             status = g_msgBus->Start();
             if (ER_OK == status) {
-                if (encryptIfc) {
+                if (secPolicy != AJ_IFC_SECURITY_INHERIT) {
                     g_msgBus->EnablePeerSecurity(authMechs.c_str(), new MyAuthListener(userId, authCount), keyStore, keyStore != NULL);
                     if (clearKeys) {
                         g_msgBus->ClearKeyStore();
@@ -698,7 +705,7 @@ int main(int argc, char** argv)
             /* Create the remote object that will be called */
             ProxyBusObject remoteObj;
             if (ER_OK == status) {
-                remoteObj = ProxyBusObject(*g_msgBus, g_wellKnownName.c_str(), ::org::alljoyn::alljoyn_test::ObjectPath, g_busListener->GetSessionId());
+                remoteObj = ProxyBusObject(*g_msgBus, g_wellKnownName.c_str(), ::org::alljoyn::alljoyn_test::ObjectPath, g_busListener->GetSessionId(), objSecure);
                 if (useIntrospection) {
                     status = remoteObj.IntrospectRemoteObject();
                     if (ER_OK != status) {
@@ -714,6 +721,14 @@ int main(int argc, char** argv)
                     const InterfaceDescription* alljoynTestValuesIntf = g_msgBus->GetInterface(::org::alljoyn::alljoyn_test::values::InterfaceName);
                     assert(alljoynTestValuesIntf);
                     remoteObj.AddInterface(*alljoynTestValuesIntf);
+                }
+                /* Enable security if it is needed */
+                if ((remoteObj.IsSecure() || (secPolicy == AJ_IFC_SECURITY_REQUIRED)) && !g_msgBus->IsPeerSecurityEnabled()) {
+                    QCC_SyncPrintf("Enabling peer security\n");
+                    g_msgBus->EnablePeerSecurity("ALLJOYN_SRP_KEYX ALLJOYN_PIN_KEYX ALLJOYN_RSA_KEYX ALLJOYN_SRP_LOGON",
+                                                 new MyAuthListener(userId, authCount),
+                                                 keyStore,
+                                                 keyStore != NULL);
                 }
             }
 

@@ -6,7 +6,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2011, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2011, 2013 Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ QStatus org::alljoyn::CreateInterfaces(BusAttachment& bus)
     {
         /* Create the org.alljoyn.Bus.Peer.Authentication interface */
         InterfaceDescription* ifc = NULL;
-        status = bus.CreateInterface(org::alljoyn::Bus::Peer::Authentication::InterfaceName, ifc);
+        status = bus.CreateInterface(org::alljoyn::Bus::Peer::Authentication::InterfaceName, ifc, AJ_IFC_SECURITY_OFF);
         if (ER_OK != status) {
             QCC_LogError(status, ("Failed to create %s interface", org::alljoyn::Bus::Peer::Authentication::InterfaceName));
             return status;

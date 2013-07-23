@@ -5,7 +5,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2011, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2011,2013 Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ using namespace std;
 using namespace qcc;
 
 namespace ajn {
+
 
 static size_t GetAnnotationsWithValues(
     const std::map<qcc::String, qcc::String>& annotations,
@@ -223,13 +224,19 @@ bool InterfaceDescription::Property::GetAnnotation(const qcc::String& name, qcc:
     return (it != annotations->end() ? value = it->second, true : false);
 }
 
-InterfaceDescription::InterfaceDescription(const char* name, bool secure) :
+InterfaceDescription::InterfaceDescription(const char* name, InterfaceSecurityPolicy secPolicy) :
     defs(new Definitions),
     name(name),
-    isActivated(false)
+    isActivated(false),
+    secPolicy(secPolicy)
 {
-    if (secure) {
-        defs->annotations[org::alljoyn::Bus::Secure] = "true";
+    if (secPolicy != AJ_IFC_SECURITY_INHERIT) {
+        /*
+         * We don't allow a secure annotaction on the introspectable interface
+         */
+        if (strcmp(name, org::freedesktop::DBus::Introspectable::InterfaceName) != 0) {
+            defs->annotations[org::alljoyn::Bus::Secure] = (secPolicy == AJ_IFC_SECURITY_REQUIRED) ? "true" : "off";
+        }
     }
 }
 
@@ -241,7 +248,9 @@ InterfaceDescription::~InterfaceDescription()
 InterfaceDescription::InterfaceDescription(const InterfaceDescription& other) :
     defs(new Definitions(other.defs->members, other.defs->properties, other.defs->annotations)),
     name(other.name),
-    isActivated(false)
+    isActivated(false),
+    secPolicy(other.secPolicy)
+
 {
     /* Update the iface pointer in each member */
     Definitions::MemberMap::iterator mit = defs->members.begin();
@@ -254,6 +263,8 @@ InterfaceDescription& InterfaceDescription::operator=(const InterfaceDescription
 {
     if (this != &other) {
         name = other.name;
+        secPolicy = other.secPolicy;
+        isActivated = false;
         defs->members = other.defs->members;
         defs->properties = other.defs->properties;
         defs->annotations = other.defs->annotations;
@@ -265,12 +276,6 @@ InterfaceDescription& InterfaceDescription::operator=(const InterfaceDescription
         }
     }
     return *this;
-}
-
-bool InterfaceDescription::IsSecure() const
-{
-    AnnotationsMap::const_iterator it = defs->annotations.find(org::alljoyn::Bus::Secure);
-    return (it != defs->annotations.end() && it->second == "true");
 }
 
 qcc::String InterfaceDescription::Introspect(size_t indent) const

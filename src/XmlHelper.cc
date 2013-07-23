@@ -5,7 +5,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2011, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2013 Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -48,9 +48,24 @@ using namespace std;
 
 namespace ajn {
 
+
+const qcc::String& GetSecureAnnotation(const XmlElement* elem)
+{
+    vector<XmlElement*>::const_iterator ifIt = elem->GetChildren().begin();
+    while (ifIt != elem->GetChildren().end()) {
+        const XmlElement* ifChildElem = *ifIt++;
+        qcc::String ifChildName = ifChildElem->GetName();
+        if ((ifChildName == "annotation") && (ifChildElem->GetAttribute("name") == org::alljoyn::Bus::Secure)) {
+            return ifChildElem->GetAttribute("value");
+        }
+    }
+    return qcc::String::Empty;
+}
+
 QStatus XmlHelper::ParseInterface(const XmlElement* elem, ProxyBusObject* obj)
 {
     QStatus status = ER_OK;
+    InterfaceSecurityPolicy secPolicy;
 
     assert(elem->GetName() == "interface");
 
@@ -60,24 +75,27 @@ QStatus XmlHelper::ParseInterface(const XmlElement* elem, ProxyBusObject* obj)
         QCC_LogError(status, ("Invalid interface name \"%s\" in XML introspection data for %s", ifName.c_str(), ident));
         return status;
     }
-
-    /* Get "secure" annotation */
-    bool secure = false;
-    vector<XmlElement*>::const_iterator ifIt = elem->GetChildren().begin();
-    while (ifIt != elem->GetChildren().end()) {
-        const XmlElement* ifChildElem = *ifIt++;
-        qcc::String ifChildName = ifChildElem->GetName();
-        if ((ifChildName == "annotation") && (ifChildElem->GetAttribute("name") == org::alljoyn::Bus::Secure)) {
-            secure = (ifChildElem->GetAttribute("value") == "true");
-            break;
+    /*
+     * Security on an interface can be "true", "inherit", or "off"
+     * Security is implicitly off on the introspectable interface.
+     */
+    qcc::String sec = GetSecureAnnotation(elem);
+    if (sec == "true") {
+        secPolicy = AJ_IFC_SECURITY_REQUIRED;
+    } else if ((sec == "off") || (ifName == org::freedesktop::DBus::Introspectable::InterfaceName)) {
+        secPolicy = AJ_IFC_SECURITY_OFF;
+    } else {
+        if ((sec != qcc::String::Empty) && (sec != "inherit")) {
+            QCC_DbgHLPrintf(("Unknown annotation %s is defaulting to 'inherit'. Valid values: 'true', 'inherit', or 'off'.", org::alljoyn::Bus::Secure));
         }
+        secPolicy = AJ_IFC_SECURITY_INHERIT;
     }
 
     /* Create a new interface */
-    InterfaceDescription intf(ifName.c_str(), secure);
+    InterfaceDescription intf(ifName.c_str(), secPolicy);
 
     /* Iterate over <method>, <signal> and <property> elements */
-    ifIt = elem->GetChildren().begin();
+    vector<XmlElement*>::const_iterator ifIt = elem->GetChildren().begin();
     while ((ER_OK == status) && (ifIt != elem->GetChildren().end())) {
         const XmlElement* ifChildElem = *ifIt++;
         const qcc::String& ifChildName = ifChildElem->GetName();
@@ -219,6 +237,9 @@ QStatus XmlHelper::ParseNode(const XmlElement* root, ProxyBusObject* obj)
 
     assert(root->GetName() == "node");
 
+    if (GetSecureAnnotation(root) == "true") {
+        obj->isSecure = true;
+    }
     /* Iterate over <interface> and <node> elements */
     const vector<XmlElement*>& rootChildren = root->GetChildren();
     vector<XmlElement*>::const_iterator it = rootChildren.begin();
@@ -241,13 +262,13 @@ QStatus XmlHelper::ParseNode(const XmlElement* root, ProxyBusObject* obj)
                     if (childObj) {
                         status = ParseNode(elem, childObj);
                     } else {
-                        ProxyBusObject newChild(*bus, obj->GetServiceName().c_str(), childObjPath.c_str(), obj->sessionId);
+                        ProxyBusObject newChild(*bus, obj->GetServiceName().c_str(), childObjPath.c_str(), obj->sessionId, obj->isSecure);
                         status = ParseNode(elem, &newChild);
                         if (ER_OK == status) {
                             obj->AddChild(newChild);
                         }
                     }
-                    if (ER_OK != status) {
+                    if (ER_OK != ER_OK) {
                         QCC_LogError(status, ("Failed to parse child object %s in introspection data for %s", childObjPath.c_str(), ident));
                     }
                 } else {

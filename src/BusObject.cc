@@ -5,7 +5,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2012, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@
 #include <qcc/Debug.h>
 #include <qcc/Util.h>
 #include <qcc/String.h>
-#include <qcc/ScopedMutexLock.h>
 #include <qcc/Mutex.h>
 #include <alljoyn/DBusStd.h>
 #include <alljoyn/AllJoynStd.h>
@@ -72,6 +71,17 @@ struct BusObject::Components {
     /** counter to prevent this BusObject being deleted if it is being used by another thread. */
     int32_t inUseCounter;
 };
+
+
+static inline bool SecurityApplies(const BusObject* obj, const InterfaceDescription* ifc)
+{
+    InterfaceSecurityPolicy ifcSec = ifc->GetSecurityPolicy();
+    if (ifcSec == AJ_IFC_SECURITY_REQUIRED) {
+        return true;
+    } else {
+        return obj->IsSecure() && (ifcSec != AJ_IFC_SECURITY_OFF);
+    }
+}
 
 /*
  * Helper function to lookup an interface. Because we don't expect objects to implement more than a
@@ -150,11 +160,11 @@ void BusObject::GetProp(const InterfaceDescription::Member* member, Message& msg
     const InterfaceDescription* ifc = LookupInterface(components->ifaces, iface->v_string.str);
     if (ifc) {
         /*
-         * If the interface is secure the message must be encrypted
+         * If the object or interface is secure the message must be encrypted
          */
-        if (ifc->IsSecure() && !msg->IsEncrypted()) {
+        if (!msg->IsEncrypted() && SecurityApplies(this, ifc)) {
             status = ER_BUS_MESSAGE_NOT_ENCRYPTED;
-            QCC_LogError(status, ("Attempt to get a property from a secure interface"));
+            QCC_LogError(status, ("Attempt to get a property from a secure %s", isSecure ? "object" : "interface"));
         } else {
             const InterfaceDescription::Property* prop = ifc->GetProperty(property->v_string.str);
             if (prop) {
@@ -231,11 +241,11 @@ void BusObject::SetProp(const InterfaceDescription::Member* member, Message& msg
     const InterfaceDescription* ifc = LookupInterface(components->ifaces, iface->v_string.str);
     if (ifc) {
         /*
-         * If the interface is secure the message must be encrypted
+         * If the object or interface is secure the message must be encrypted
          */
-        if (ifc->IsSecure() && !msg->IsEncrypted()) {
+        if (!msg->IsEncrypted() && SecurityApplies(this, ifc)) {
             status = ER_BUS_MESSAGE_NOT_ENCRYPTED;
-            QCC_LogError(status, ("Attempt to set a property on a secure interface"));
+            QCC_LogError(status, ("Attempt to set a property on a secure %s", isSecure ? "object" : "interface"));
         } else {
             const InterfaceDescription::Property* prop = ifc->GetProperty(property->v_string.str);
             if (prop) {
@@ -274,11 +284,11 @@ void BusObject::GetAllProps(const InterfaceDescription::Member* member, Message&
     const InterfaceDescription* ifc = LookupInterface(components->ifaces, iface->v_string.str);
     if (ifc) {
         /*
-         * If the interface is secure the message must be encrypted
+         * If the object or interface is secure the message must be encrypted
          */
-        if (ifc->IsSecure() && !msg->IsEncrypted()) {
+        if (!msg->IsEncrypted() && SecurityApplies(this, ifc)) {
             status = ER_BUS_MESSAGE_NOT_ENCRYPTED;
-            QCC_LogError(status, ("Attempt to get properties from a secure interface"));
+            QCC_LogError(status, ("Attempt to get properties from a secure %s", isSecure ? "object" : "interface"));
         } else {
             size_t numProps = ifc->GetProperties();
             props = new const InterfaceDescription::Property *[numProps];
@@ -326,7 +336,12 @@ void BusObject::GetAllProps(const InterfaceDescription::Member* member, Message&
 void BusObject::Introspect(const InterfaceDescription::Member* member, Message& msg)
 {
     qcc::String xml = org::freedesktop::DBus::Introspectable::IntrospectDocType;
-    xml += "<node>\n" + GenerateIntrospection(false, 2) + "</node>\n";
+    xml += "<node>\n";
+    if (isSecure) {
+        xml += "  <annotation name=\"org.alljoyn.Bus.Secure\" value=\"true\"/>\n";
+    }
+    xml += GenerateIntrospection(false, 2);
+    xml += "</node>\n";
     MsgArg arg("s", xml.c_str());
     QStatus status = MethodReply(msg, &arg, 1);
     if (status != ER_OK) {
@@ -481,9 +496,9 @@ QStatus BusObject::Signal(const char* destination,
     Message msg(*bus);
 
     /*
-     * If the interface is secure or encryption is explicitly requested the signal must be encrypted.
+     * If the object or interface is secure or encryption is explicitly requested the signal must be encrypted.
      */
-    if (signalMember.iface->IsSecure()) {
+    if (SecurityApplies(this, signalMember.iface)) {
         flags |= ALLJOYN_FLAG_ENCRYPTED;
     }
     if ((flags & ALLJOYN_FLAG_ENCRYPTED) && !bus->IsPeerSecurityEnabled()) {
@@ -616,7 +631,6 @@ QStatus BusObject::MethodReply(const Message& msg, QStatus status)
 
 void BusObject::AddChild(BusObject& child)
 {
-    //ScopedMutexLock(bus.GetInternal().GetLocalEndpoint().objectsLock, MUTEX_CONTEXT);
     QCC_DbgPrintf(("AddChild %s to object with path = \"%s\"", child.GetPath(), GetPath()));
     child.parent = this;
     components->children.push_back(&child);
@@ -624,7 +638,6 @@ void BusObject::AddChild(BusObject& child)
 
 QStatus BusObject::RemoveChild(BusObject& child)
 {
-    //ScopedMutexLock(bus.GetInternal().GetLocalEndpoint().objectsLock, MUTEX_CONTEXT);
     QStatus status = ER_BUS_NO_SUCH_OBJECT;
     vector<BusObject*>::iterator it = find(components->children.begin(), components->children.end(), &child);
     if (it != components->children.end()) {
@@ -639,7 +652,6 @@ QStatus BusObject::RemoveChild(BusObject& child)
 
 BusObject* BusObject::RemoveChild()
 {
-    //ScopedMutexLock(bus.GetInternal().GetLocalEndpoint().objectsLock, MUTEX_CONTEXT);
     size_t sz = components->children.size();
     if (sz > 0) {
         BusObject* child = components->children[sz - 1];
@@ -654,7 +666,6 @@ BusObject* BusObject::RemoveChild()
 
 void BusObject::Replace(BusObject& object)
 {
-    //ScopedMutexLock(bus.GetInternal().GetLocalEndpoint().objectsLock, MUTEX_CONTEXT);
     QCC_DbgPrintf(("Replacing object with path = \"%s\"", GetPath()));
     object.components->children = components->children;
     vector<BusObject*>::iterator it = object.components->children.begin();
@@ -692,7 +703,8 @@ BusObject::BusObject(BusAttachment& bus, const char* path, bool isPlaceholder) :
     path(path),
     parent(NULL),
     isRegistered(false),
-    isPlaceholder(isPlaceholder)
+    isPlaceholder(isPlaceholder),
+    isSecure(false)
 {
     components->inUseCounter = 0;
 }
@@ -703,7 +715,8 @@ BusObject::BusObject(const char* path, bool isPlaceholder) :
     path(path),
     parent(NULL),
     isRegistered(false),
-    isPlaceholder(isPlaceholder)
+    isPlaceholder(isPlaceholder),
+    isSecure(false)
 {
     components->inUseCounter = 0;
 }

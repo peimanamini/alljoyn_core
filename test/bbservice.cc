@@ -4,7 +4,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2012, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -689,7 +689,9 @@ static void usage(void)
     printf("   -w                    = Advertise over Wi-Fi Direct (enables selective advertising)\n");
     printf("   -a                    = Cancel advertising while servicing a single client (causes rediscovery between iterations)\n");
     printf("   -p                    = Respond to an incoming signal by pinging back to the sender\n");
-
+    printf("   -sn                   = Interface security is not applicable\n");
+    printf("   -sr                   = Interface security is required\n");
+    printf("   -so                   = Enable object security\n");
 }
 
 /** Main entry point */
@@ -699,6 +701,8 @@ int main(int argc, char** argv)
     _CrtMemDumpAllObjectsSince(NULL);
 #endif
     QStatus status = ER_OK;
+    InterfaceSecurityPolicy secPolicy = AJ_IFC_SECURITY_INHERIT;
+    bool objSecure = false;
     unsigned long reportInterval = 1000;
     const char* keyStore = NULL;
     bool secureIfce = false;
@@ -783,6 +787,12 @@ int main(int argc, char** argv)
             opts.transports |= TRANSPORT_WFD;
         } else if (0 == strcmp("-a", argv[i])) {
             g_cancelAdvertise = true;
+        } else if (0 == strcmp("-sn", argv[i])) {
+            secPolicy = AJ_IFC_SECURITY_OFF;
+        } else if (0 == strcmp("-sr", argv[i])) {
+            secPolicy = AJ_IFC_SECURITY_REQUIRED;
+        } else if (0 == strcmp("-so", argv[i])) {
+            objSecure = true;
         } else {
             status = ER_FAIL;
             printf("Unknown option %s\n", argv[i]);
@@ -811,7 +821,7 @@ int main(int argc, char** argv)
 
     /* Add org.alljoyn.alljoyn_test interface */
     InterfaceDescription* testIntf = NULL;
-    status = g_msgBus->CreateInterface(::org::alljoyn::alljoyn_test::InterfaceName, testIntf, secureIfce);
+    status = g_msgBus->CreateInterface(::org::alljoyn::alljoyn_test::InterfaceName, testIntf, secPolicy);
     if (ER_OK == status) {
         testIntf->AddSignal("my_signal", "a{ys}", NULL, 0);
         testIntf->AddMethod("my_ping", "s", "s", "inStr,outStr", 0);
@@ -825,7 +835,7 @@ int main(int argc, char** argv)
     /* Add org.alljoyn.alljoyn_test.values interface */
     if (ER_OK == status) {
         InterfaceDescription* valuesIntf = NULL;
-        status = g_msgBus->CreateInterface(::org::alljoyn::alljoyn_test::values::InterfaceName, valuesIntf, secureIfce);
+        status = g_msgBus->CreateInterface(::org::alljoyn::alljoyn_test::values::InterfaceName, valuesIntf, secPolicy);
         if (ER_OK == status) {
             valuesIntf->AddProperty("int_val", "i", PROP_ACCESS_RW);
             valuesIntf->AddProperty("str_val", "s", PROP_ACCESS_RW);
@@ -849,7 +859,7 @@ int main(int argc, char** argv)
 
     /* Register local objects and connect to the daemon */
     LocalTestObject testObj(*g_msgBus, ::org::alljoyn::alljoyn_test::ObjectPath, reportInterval, opts);
-    g_msgBus->RegisterBusObject(testObj);
+    g_msgBus->RegisterBusObject(testObj, objSecure);
 
 
     g_msgBus->EnablePeerSecurity("ALLJOYN_SRP_KEYX ALLJOYN_PIN_KEYX ALLJOYN_RSA_KEYX ALLJOYN_SRP_LOGON", new MyAuthListener(), keyStore, keyStore != NULL);

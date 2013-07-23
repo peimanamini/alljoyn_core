@@ -6,7 +6,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2012, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -487,13 +487,13 @@ QStatus _LocalEndpoint::DoPushMessage(Message& message)
     return status;
 }
 
-QStatus _LocalEndpoint::RegisterBusObject(BusObject& object)
+QStatus _LocalEndpoint::RegisterBusObject(BusObject& object, bool isSecure)
 {
     QStatus status = ER_OK;
 
     const char* objPath = object.GetPath();
 
-    QCC_DbgPrintf(("RegisterObject %s", objPath));
+    QCC_DbgPrintf(("RegisterBusObject %s", objPath));
 
     if (!IsLegalObjectPath(objPath)) {
         status = ER_BUS_BAD_OBJ_PATH;
@@ -521,6 +521,11 @@ QStatus _LocalEndpoint::RegisterBusObject(BusObject& object)
                     break;
                 }
                 defaultObjects.push_back(parent);
+            } else {
+                /*
+                 * If the parent is secure then this object is secure also.
+                 */
+                isSecure |= parent->isSecure;
             }
             lastParent = parent;
         }
@@ -528,6 +533,7 @@ QStatus _LocalEndpoint::RegisterBusObject(BusObject& object)
 
     /* Now register the object itself */
     if (ER_OK == status) {
+        object.isSecure = isSecure;
         status = DoRegisterBusObject(object, lastParent, false);
     }
 
@@ -538,7 +544,7 @@ QStatus _LocalEndpoint::RegisterBusObject(BusObject& object)
 
 QStatus _LocalEndpoint::DoRegisterBusObject(BusObject& object, BusObject* parent, bool isPlaceholder)
 {
-    QCC_DbgPrintf(("RegisterBusObject %s", object.GetPath()));
+    QCC_DbgPrintf(("DoRegisterBusObject %s", object.GetPath()));
     const char* objPath = object.GetPath();
 
     /* objectsLock is already obtained */
@@ -885,11 +891,21 @@ QStatus _LocalEndpoint::HandleMethodCall(Message& message)
              */
             status = Diagnose(message);
         }
-    } else if (entry->member->iface->IsSecure() && !message->IsEncrypted()) {
-        status = ER_BUS_MESSAGE_NOT_ENCRYPTED;
-        QCC_LogError(status, ("Method call to secure interface was not encrypted"));
     } else {
-        status = message->UnmarshalArgs(entry->member->signature, entry->member->returnSignature.c_str());
+        if (!message->IsEncrypted()) {
+            /*
+             * If the interface is secure encryption is required. If the object is secure encryption
+             * is required unless security is not applicable to the this interface.
+             */
+            InterfaceSecurityPolicy ifcSec = entry->member->iface->GetSecurityPolicy();
+            if ((ifcSec == AJ_IFC_SECURITY_REQUIRED) || (entry->object->IsSecure() && (ifcSec != AJ_IFC_SECURITY_OFF))) {
+                status = ER_BUS_MESSAGE_NOT_ENCRYPTED;
+                QCC_LogError(status, ("Method call to secure %s was not encrypted", entry->object->IsSecure() ? "object" : "interface"));
+            }
+        }
+        if (status == ER_OK) {
+            status = message->UnmarshalArgs(entry->member->signature, entry->member->returnSignature.c_str());
+        }
     }
     if (status == ER_OK) {
         /* Call the method handler */

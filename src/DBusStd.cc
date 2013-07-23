@@ -6,7 +6,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2011, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2011, 2013 Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ QStatus org::freedesktop::DBus::CreateInterfaces(BusAttachment& bus) {
 
     /* Create the org.freedesktop.DBus.Introspectable interface */
     InterfaceDescription* introspectIntf = NULL;
-    status = bus.CreateInterface(org::freedesktop::DBus::Introspectable::InterfaceName, introspectIntf);
+    status = bus.CreateInterface(org::freedesktop::DBus::Introspectable::InterfaceName, introspectIntf, AJ_IFC_SECURITY_OFF);
     if ((ER_OK != status) || !introspectIntf) {
         if (ER_OK == status) status = ER_FAIL;
         QCC_LogError(status, ("Failed to create interface \"%s\"", org::freedesktop::DBus::Introspectable::InterfaceName));

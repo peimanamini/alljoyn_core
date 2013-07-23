@@ -6,7 +6,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2012, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -244,12 +244,13 @@ class _LocalEndpoint : public _BusEndpoint, public qcc::AlarmListener, public Me
     /**
      * Register a BusObject.
      *
-     * @param obj       BusObject to be registered.
+     * @param obj      BusObject to be registered.
+     * @param secure   true if peer authentication is required to access this object.
      * @return
      *      - ER_OK if successful.
      *      - ER_BUS_BAD_OBJ_PATH for a bad object path
      */
-    QStatus RegisterBusObject(BusObject& obj);
+    QStatus RegisterBusObject(BusObject& obj, bool secure);
 
     /**
      * Unregisters an object and its method and signal handlers.
@@ -612,7 +613,10 @@ class LocalTransport : public Transport {
      */
     QStatus RegisterBusObject(BusObject& obj)
     {
-        return localEndpoint->RegisterBusObject(obj);
+        /*
+         * Note: bus local objects do not require peer authentication
+         */
+        return localEndpoint->RegisterBusObject(obj, false);
     }
 
     /**

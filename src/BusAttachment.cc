@@ -38,6 +38,7 @@
 #include <alljoyn/BusListener.h>
 #include <alljoyn/DBusStd.h>
 #include <alljoyn/AllJoynStd.h>
+#include <alljoyn/InterfaceDescription.h>
 #include "AuthMechanism.h"
 #include "AuthMechAnonymous.h"
 #include "AuthMechDBusCookieSHA1.h"
@@ -680,14 +681,14 @@ void BusAttachment::WaitStopInternal()
     }
 }
 
-QStatus BusAttachment::CreateInterface(const char* name, InterfaceDescription*& iface, bool secure)
+QStatus BusAttachment::CreateInterface(const char* name, InterfaceDescription*& iface, InterfaceSecurityPolicy secPolicy)
 {
     if (NULL != GetInterface(name)) {
         iface = NULL;
         return ER_BUS_IFACE_ALREADY_EXISTS;
     }
     StringMapKey key = String(name);
-    InterfaceDescription intf(name, secure);
+    InterfaceDescription intf(name, secPolicy);
     iface = &(busInternal->ifaceDescriptions.insert(pair<StringMapKey, InterfaceDescription>(key, intf)).first->second);
     return ER_OK;
 }
@@ -805,8 +806,8 @@ bool BusAttachment::IsConnected() const {
     return busInternal->router && busInternal->router->IsBusRunning();
 }
 
-QStatus BusAttachment::RegisterBusObject(BusObject& obj) {
-    return busInternal->localEndpoint->RegisterBusObject(obj);
+QStatus BusAttachment::RegisterBusObject(BusObject& obj, bool secure) {
+    return busInternal->localEndpoint->RegisterBusObject(obj, secure);
 }
 
 void BusAttachment::UnregisterBusObject(BusObject& object)

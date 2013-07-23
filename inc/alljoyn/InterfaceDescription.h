@@ -6,7 +6,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2011, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2011,2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -47,6 +47,21 @@ static const uint8_t PROP_ACCESS_RW    = 3; /**< Read-Write Access type */
 static const uint8_t MEMBER_ANNOTATE_NO_REPLY   = 1; /**< No reply annotate flag */
 static const uint8_t MEMBER_ANNOTATE_DEPRECATED = 2; /**< Deprecated annotate flag */
 // @}
+
+/**
+ * The interface security policy can be inherit, required, or off. If security is
+ * required on an interface, methods on that interface can only be called by an authenticated peer
+ * and signals emitted from that interfaces can only be received by an authenticated peer. If
+ * security is not specified for an interface the interface inherits the security of the objects
+ * that implement it.  If security is not applicable to an interface authentication is never
+ * required even when the implemented by a secure object. For example, security does not apply to
+ * the Introspection interface otherwise secure objects would not be introspectable.
+ */
+typedef enum {
+    AJ_IFC_SECURITY_INHERIT,       /**< Inherit the security of the object that implements the interface */
+    AJ_IFC_SECURITY_REQUIRED,      /**< Security is required for an interface */
+    AJ_IFC_SECURITY_OFF            /**< Security does not apply to this interface */
+} InterfaceSecurityPolicy;
 
 /**
  * @class InterfaceDescription
@@ -656,12 +671,20 @@ class InterfaceDescription {
     void Activate() { isActivated = true; }
 
     /**
-     * Indicates if this interface is secure. Secure interfaces require end-to-end authentication.
-     * The arguments for methods calls made to secure interfaces and signals emitted by secure
-     * interfaces are encrypted.
-     * @return true if the interface is secure.
+     * Indicates if this interface is required to be secure. Secure interfaces require end-to-end
+     * authentication.  The arguments for methods calls made to secure interfaces and signals
+     * emitted by secure interfaces are encrypted.
+     *
+     * @return true if the interface is required to be secure.
      */
-    bool IsSecure() const;
+    bool IsSecure() const { return secPolicy == AJ_IFC_SECURITY_REQUIRED; }
+
+    /**
+     * Get the security policy that applies to this interface.
+     *
+     * @return Returns the security policy for this interface.
+     */
+    InterfaceSecurityPolicy GetSecurityPolicy() const { return secPolicy; }
 
     /**
      * Equality operation.
@@ -691,9 +714,10 @@ class InterfaceDescription {
      * Construct an interface with no methods or properties
      * This constructor cannot be used by any class other than the factory class (Bus).
      *
-     * @param name   Fully qualified interface name.
+     * @param name      Fully qualified interface name.
+     * @param secPolicy The security policy for this interface
      */
-    InterfaceDescription(const char* name, bool secure);
+    InterfaceDescription(const char* name, InterfaceSecurityPolicy secPolicy);
 
     /**
      * Assignment operator
@@ -707,6 +731,8 @@ class InterfaceDescription {
 
     qcc::String name;    /**< Name of interface */
     bool isActivated;    /**< Set to true when interface is activated */
+    InterfaceSecurityPolicy secPolicy; /**< The security policy for this interface */
+
 };
 
 }

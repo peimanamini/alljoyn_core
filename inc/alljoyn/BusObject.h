@@ -9,7 +9,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2012, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -264,6 +264,13 @@ class BusObject : public MessageReceiver {
      * @return   ER_OK if successful.
      */
     QStatus CancelSessionlessMessage(const Message& msg) { return CancelSessionlessMessage(msg->GetCallSerial()); }
+
+    /**
+     * Indicates if this object is secure.
+     *
+     * @return Return true if authentication is required to emit signals or call methods on this object.
+     */
+    bool IsSecure() const { return isSecure; }
 
   protected:
 
@@ -698,6 +705,9 @@ class BusObject : public MessageReceiver {
 
     /** true if object is a placeholder (i.e. only exists to be the parent of a more meaningful object instance) */
     bool isPlaceholder;
+
+    /** true if this object is secure */
+    bool isSecure;
 };
 
 }

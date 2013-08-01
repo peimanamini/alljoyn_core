@@ -32,6 +32,9 @@ using namespace qcc;
 /** @internal */
 #define QCC_MODULE "ICESTREAM"
 
+/** Uncomment this macro to enforce the selection of the relay candidate */
+//#define ENFORCE_RELAY_CANDIDATE_SELECTION
+
 namespace ajn {
 
 #ifndef NDEBUG
@@ -171,7 +174,7 @@ void ICEStream::SortAndPruneCandidatePairs(void)
 
     for (iter = tempList.begin(); iter != tempList.end(); ++iter) {
 
-#if 0
+#ifdef ENFORCE_RELAY_CANDIDATE_SELECTION
         if (((*iter)->local->GetType() != _ICECandidate::Relayed_Candidate) && ((*iter)->remote->GetType() != _ICECandidate::Relayed_Candidate)) {
             checkList.remove(*iter);
             continue;

@@ -13,14 +13,14 @@
 #    limitations under the License.
 # 
 
-Import('env', 'daemon_objs')
+Import('daemon_env', 'daemon_objs')
 
 # Add OS specific daemon_objs
-os_objs = env.Object(['ProximityScanner.cc','Socket.cc'])
+os_objs = daemon_env.Object(['ProximityScanner.cc','Socket.cc'])
 
 # Build the posix daemon and service launcher helper.
-if env['OS'] != 'darwin':
-    daemon = env.Program('alljoyn-daemon', ['daemon-main.cc'] + daemon_objs + os_objs)
+if daemon_env['OS'] != 'darwin':
+    daemon = daemon_env.Program('alljoyn-daemon', ['daemon-main.cc'] + daemon_objs + os_objs)
 else:
     daemon = []
 	
@@ -28,11 +28,11 @@ else:
 # On Android, build a static library that can be linked into a JNI dynamic 
 # library to implement the daemon as a Service
 #
-if env['OS'] == 'android':
-   libenv = env.Clone(CCFLAGS = '-DDAEMON_LIB')
+if daemon_env['OS'] == 'android':
+   libenv = daemon_env.Clone(CCFLAGS = '-DDAEMON_LIB')
    libenv.Object(target = 'alljoyn-daemon', source = 'daemon-main.cc')
-   libdaemon = env.StaticLibrary(['alljoyn-daemon'] + daemon_objs + os_objs)
-   dlibs = env.Install('$CPP_DISTDIR/lib', libdaemon)
+   libdaemon = libenv.StaticLibrary(['alljoyn-daemon'] + daemon_objs + os_objs)
+   dlibs = libenv.Install('$CPP_DISTDIR/lib', libdaemon)
 
 #progs = daemon + servicehelper
 progs = daemon, os_objs

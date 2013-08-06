@@ -14,10 +14,10 @@
 # 
 
 import os
-Import ('env')
+Import ('daemon_env')
 
-srcs = [ f for f in env.Glob('*.cc')]
-env.Append(CPPPATH=[env.Dir('.').srcnode()])
-env.Append(CPPPATH=[env.Dir('../../').srcnode()])
-proximObjs = env.Object(srcs)
+srcs = [ f for f in daemon_env.Glob('*.cc') ]
+daemon_env.Append(CPPPATH = [daemon_env.Dir('.').srcnode()])
+daemon_env.Append(CPPPATH = [daemon_env.Dir('../../').srcnode()])
+proximObjs = daemon_env.Object(srcs)
 Return('proximObjs')

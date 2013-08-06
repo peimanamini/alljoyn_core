@@ -25,24 +25,20 @@ progs = [
     env.Program('signalConsumer_client', ['signalConsumer_client.cc']),
     ]
 
-# The return value is the collection of files installed in the build destination.
-returnValue = []
+if env['OS'] in ['linux', 'darwin']:
+    env.Install('$CPP_DISTDIR/bin/samples', progs )
+    env.Install(clientDistDir, env.Glob('*.cc'))
+    env.Install(clientDistDir, 'Makefile')
+    env.Install(clientDistDir, 'README.txt')
 
-if 'linux' == env['OS'] or 'darwin' == env['OS']:
-    returnValue += env.Install('$CPP_DISTDIR/bin/samples', progs )
-    returnValue += env.Install(clientDistDir, env.Glob('*.cc'))
-    returnValue += env.Install(clientDistDir, 'Makefile')
-    returnValue += env.Install(clientDistDir, 'README.txt')
 elif env['OS_GROUP'] == 'windows':
-    returnValue += env.Install('$CPP_DISTDIR/bin/samples', progs )
-    returnValue += env.Install(clientDistDir, env.Glob('*.cc'))
-    returnValue += env.InstallAs(clientDistDir + '/README.txt', 'README.windows.txt')
+    env.Install('$CPP_DISTDIR/bin/samples', progs )
+    env.Install(clientDistDir, env.Glob('*.cc'))
+    env.InstallAs(clientDistDir + '/README.txt', 'README.windows.txt')
     #install Visual Studio solution files
-    returnValue += env.Install(clientDistDir+'/VC2008Win7', 'VC2008Win7/VC2008Win7.sln')
-    returnValue += env.Install(clientDistDir+'/VC2008Win7/basic_client', 'VC2008Win7/basic_client/basic_client.vcproj')
-    returnValue += env.Install(clientDistDir+'/VC2008Win7/basic_service', 'VC2008Win7/basic_service/basic_service.vcproj')
-    returnValue += env.Install(clientDistDir+'/VC2008Win7/nameChange_client', 'VC2008Win7/nameChange_client/nameChange_client.vcproj')
-    returnValue += env.Install(clientDistDir+'/VC2008Win7/signal_service', 'VC2008Win7/signal_service/signal_service.vcproj')
-    returnValue += env.Install(clientDistDir+'/VC2008Win7/signalConsumer_client', 'VC2008Win7/signalConsumer_client/signalConsumer_client.vcproj')
-
-Return ('returnValue')
+    env.Install(clientDistDir+'/VC2008Win7', 'VC2008Win7/VC2008Win7.sln')
+    env.Install(clientDistDir+'/VC2008Win7/basic_client', 'VC2008Win7/basic_client/basic_client.vcproj')
+    env.Install(clientDistDir+'/VC2008Win7/basic_service', 'VC2008Win7/basic_service/basic_service.vcproj')
+    env.Install(clientDistDir+'/VC2008Win7/nameChange_client', 'VC2008Win7/nameChange_client/nameChange_client.vcproj')
+    env.Install(clientDistDir+'/VC2008Win7/signal_service', 'VC2008Win7/signal_service/signal_service.vcproj')
+    env.Install(clientDistDir+'/VC2008Win7/signalConsumer_client', 'VC2008Win7/signalConsumer_client/signalConsumer_client.vcproj')

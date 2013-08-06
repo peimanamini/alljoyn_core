@@ -14,26 +14,23 @@
 # 
 
 Import('env')
-clientDistDir = '$CPP_DISTDIR/samples/FileTransfer'
-
-# The return value is the collection of files installed in the build destination.
-returnValue = []
+clientDistDir = '$DISTDIR/cpp/samples/FileTransfer'
 
 # Sample Programs
 progs = [
-    env.Program('FileTransferClient',  ['FileTransferClient.cc']),
-    env.Program('FileTransferService', ['FileTransferService.cc'])
+    env.Program('FileTransferClient',  'FileTransferClient.cc'),
+    env.Program('FileTransferService', 'FileTransferService.cc')
     ]
-if 'linux' == env['OS'] or 'darwin' == env['OS']:
-    returnValue += env.Install('$CPP_DISTDIR/bin/samples', progs )
-    returnValue += env.Install(clientDistDir, env.Glob('*.cc'))
-elif env['OS_GROUP'] == 'windows':
-    returnValue += env.Install('$CPP_DISTDIR/bin/samples', progs )
-    returnValue += env.Install(clientDistDir, env.Glob('*.cc'))
-    returnValue += env.InstallAs(clientDistDir + '/README.txt', 'README.windows.txt')
-    #install Visual Studio solution files
-    returnValue += env.Install(clientDistDir+'/VC2008Win7', 'VC2008Win7/VC2008Win7.sln')
-    returnValue += env.Install(clientDistDir+'/VC2008Win7/FileTransferClient', 'VC2008Win7/FileTransferClient/FileTransferClient.vcproj')
-    returnValue += env.Install(clientDistDir+'/VC2008Win7/FileTransferService', 'VC2008Win7/FileTransferService/FileTransferService.vcproj')
 
-Return ('returnValue')
+if env['OS'] in ['linux', 'darwin']:
+    env.Install('$DISTDIR/cpp/bin/samples', progs )
+    env.Install(clientDistDir, env.Glob('*.cc'))
+
+elif env['OS_GROUP'] == 'windows':
+    env.Install('$DISTDIR/cpp/bin/samples', progs )
+    env.Install(clientDistDir, env.Glob('*.cc'))
+    env.InstallAs(clientDistDir + '/README.txt', 'README.windows.txt')
+    #install Visual Studio solution files
+    env.Install(clientDistDir+'/VC2008Win7', 'VC2008Win7/VC2008Win7.sln')
+    env.Install(clientDistDir+'/VC2008Win7/FileTransferClient', 'VC2008Win7/FileTransferClient/FileTransferClient.vcproj')
+    env.Install(clientDistDir+'/VC2008Win7/FileTransferService', 'VC2008Win7/FileTransferService/FileTransferService.vcproj')

@@ -13,45 +13,49 @@
 #    limitations under the License.
 # 
 
-Import('env')
+Import('ajenv')
 Import('common_objs')
 from os.path import basename
 
+# Need to clone the environment so that building a shared library does not
+# cause a circular dependency.
+libenv = ajenv.Clone()
+
 # AllJoyn Sources
-srcs = [ f for f in env.Glob('*.cc') + env.Glob('*.c')
+srcs = [ f for f in libenv.Glob('*.cc') + libenv.Glob('*.c')
          if not (str(f).endswith('version.cc')) ]
 
 winrt_status_srcs = [ 'Status_CPP0x.cc', 'StatusComment.cc' ]
-if env['OS_GROUP'] != 'winrt':
+if libenv['OS_GROUP'] != 'winrt':
     srcs = [ f for f in srcs if basename(str(f)) not in winrt_status_srcs ]
 
 # Platform specific sources
-if env['OS'] == 'darwin':
-    os_srcs = [ f for f in env.Glob(env['OS'] + '/*.cc') ]
+if libenv['OS'] == 'darwin':
+    os_srcs = [ f for f in libenv.Glob(libenv['OS'] + '/*.cc') ]
 else:
-    os_srcs = [ f for f in env.Glob(env['OS_GROUP'] + '/*.cc') ]
+    os_srcs = [ f for f in libenv.Glob(libenv['OS_GROUP'] + '/*.cc') ]
 
-    if env['OS'] == 'openwrt':
-        os_srcs += [ f for f in env.Glob('posix/linux/*.cc')]
+    if libenv['OS'] == 'openwrt':
+        os_srcs += [ f for f in libenv.Glob('posix/linux/*.cc')]
     else:
-        os_srcs += [ f for f in env.Glob(env['OS_GROUP'] + '/' + env['OS'] + '/*.cc')]
+        os_srcs += [ f for f in libenv.Glob(libenv['OS_GROUP'] + '/' + libenv['OS'] + '/*.cc')]
 
 
-alljoyn_core_objs = env.Object(srcs) + env.Object(os_srcs)
+alljoyn_core_objs = libenv.Object(srcs) + libenv.Object(os_srcs)
 objs = common_objs + alljoyn_core_objs 
 
-version_cc = env.GenVersion('version')
-env.Depends(version_cc, objs)
-objs.append(env.Object(version_cc))
+version_cc = libenv.GenVersion('version')
+libenv.Depends(version_cc, objs)
+objs.append(libenv.Object(version_cc))
 
-alljoyn_core_objs.append(env.Object(version_cc))
+alljoyn_core_objs.append(libenv.Object(version_cc))
 
-if env['OS_GROUP'] == 'winrt':
+if libenv['OS_GROUP'] == 'winrt':
     liballjoyn=None
     # winrt-specific build step
-    alljoyn_core_objs.append(env.SConscript(env['OS_GROUP'] + '/SConscript'));
+    alljoyn_core_objs.append(libenv.SConscript(libenv['OS_GROUP'] + '/SConscript', exports = ['libenv']));
 else:
     # AllJoyn Static Library
-    liballjoyn = env.StaticLibrary('alljoyn', objs)
+    liballjoyn = libenv.StaticLibrary('alljoyn', objs)
 
 Return ('liballjoyn','alljoyn_core_objs')

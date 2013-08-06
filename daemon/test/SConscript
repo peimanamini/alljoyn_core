@@ -13,23 +13,21 @@
 #    limitations under the License.
 # 
 
-Import('env', 'daemon_objs')
+Import('daemon_env', 'daemon_objs')
 from os.path import basename
-
-env.Append(CPPPATH=['..'])
 
 # Test Programs
 progs = [
-    env.Program('advtunnel', ['advtunnel.cc'] + daemon_objs),
-    env.Program('ns', ['ns.cc'] + daemon_objs)
+    daemon_env.Program('advtunnel', ['advtunnel.cc'] + daemon_objs),
+    daemon_env.Program('ns', ['ns.cc'] + daemon_objs)
    ]
 
-if env['OS'] == 'android' or env['OS'] == 'linux':
-   progs.append(env.Program('bbdaemon', ['bbdaemon.cc'] + daemon_objs))
+if daemon_env['OS'] in ['android', 'linux']:
+   progs.append(daemon_env.Program('bbdaemon', ['bbdaemon.cc'] + daemon_objs))
    
-if env['OS_GROUP'] == 'posix' and env['OS'] != 'darwin':
-   testenv = env.Clone()
-   testenv.Append(LINKFLAGS=['-Wl,--allow-multiple-definition'])
+if daemon_env['OS_GROUP'] == 'posix' and daemon_env['OS'] != 'darwin':
+   testenv = daemon_env.Clone()
+   testenv.Append(LINKFLAGS = ['-Wl,--allow-multiple-definition'])
    progs.append(testenv.Program('BTAccessorTester', ['BTAccessorTester.cc'] + [ o for o in daemon_objs
                                                                                 if ((basename(str(o)) != 'BTTransport.o') and
                                                                                     (basename(str(o)) != 'BTController.o'))]))
@@ -42,20 +40,20 @@ if env['OS_GROUP'] == 'posix' and env['OS'] != 'darwin':
 #if env['OS'] == 'win7':
 #   progs.append(env.Program('WinBtDiscovery.exe', ['WinBtDiscovery.cc']))
    
-if env['OS_GROUP'] == 'posix':
-   progs.append(env.Program('packettest', ['PacketTest.cc'] + daemon_objs))
+if daemon_env['OS_GROUP'] == 'posix':
+   progs.append(daemon_env.Program('packettest', ['PacketTest.cc'] + daemon_objs))
 
 #
 # On Android, build a static library that can be linked into a JNI dynamic 
 # library to implement the daemon as a Service
 #
-if env['OS'] == 'android':
-   libenv = env.Clone(CCFLAGS = '-DDAEMON_LIB')
+if daemon_env['OS'] == 'android':
+   libenv = daemon_env.Clone(CCFLAGS = '-DDAEMON_LIB')
    libenv.Object(target = 'bbdaemon-lib', source = 'bbdaemon.cc')
-   libbbdaemon = env.StaticLibrary(['bbdaemon-lib'] + daemon_objs)
-   dlibs = env.Install('$CPP_DISTDIR/lib', libbbdaemon)
+   libbbdaemon = libenv.StaticLibrary(['bbdaemon-lib'] + daemon_objs)
+   dlibs = libenv.Install('$CPP_DISTDIR/lib', libbbdaemon)
 
-if env['OS_GROUP'] == 'winrt':
+if daemon_env['OS_GROUP'] == 'winrt':
     progs = []
 	
 Return('progs')

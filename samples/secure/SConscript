@@ -29,16 +29,11 @@ progs = [
     env.Program('DeskTopSharedKSService', ['DeskTopSharedKSService.cc'])
     ]
 
-# The return value is the collection of files installed in the build destination.
-returnValue = []
-
 #if 'linux' == env['OS'] or 'darwin' == env['OS']:
-#    returnValue += env.Install('$CPP_DISTDIR/bin/samples', progs )
-#    returnValue += env.Install(clientDistDir, env.Glob('*.cc'))
-#    returnValue += env.Install(clientDistDir, env.Glob('Make*'))
-#    returnValue += env.Install(clientDistDir, env.Glob('README*'))
+#    env.Install('$CPP_DISTDIR/bin/samples', progs )
+#    env.Install(clientDistDir, env.Glob('*.cc'))
+#    env.Install(clientDistDir, env.Glob('Make*'))
+#    env.Install(clientDistDir, env.Glob('README*'))
 #elif env['OS_GROUP'] == 'windows':
-#    returnValue += env.Install('$CPP_DISTDIR/bin/samples', progs )
-#    returnValue += env.Install(clientDistDir, env.Glob('*.cc'))
-
-Return ('returnValue')
+#    env.Install('$CPP_DISTDIR/bin/samples', progs )
+#    env.Install(clientDistDir, env.Glob('*.cc'))

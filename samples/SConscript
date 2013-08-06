@@ -15,34 +15,29 @@
 
 Import('env')
 
-# The return value is the collection of files installed in the build destination.
-returnValue = []
-
 if env['OS'] != 'win8':
     # Basic Sample programs
-    returnValue += env.SConscript('basic/SConscript')
+    env.SConscript('basic/SConscript')
 
     # Simple Sample programs
-    returnValue += env.SConscript('simple/SConscript')
+    env.SConscript('simple/SConscript')
 
     # Security Sample programs
-    returnValue += env.SConscript('secure/SConscript')
+    env.SConscript('secure/SConscript')
 
     # Chat Sample program
-    returnValue += env.SConscript('chat/SConscript')
+    env.SConscript('chat/SConscript')
 
     # File transfer Sample program
-    returnValue += env.SConscript('FileTransfer/SConscript')
+    env.SConscript('FileTransfer/SConscript')
 
     # Sample Daemon program
-    returnValue += env.SConscript('SampleDaemon/SConscript')
+    env.SConscript('SampleDaemon/SConscript')
 
 # Install readme
 if env['OS_CONF'] == 'windows':
-    returnValue += env.InstallAs('$CPP_DISTDIR/samples/README.txt', 'README.windows.txt')
+    env.InstallAs('$CPP_DISTDIR/samples/README.txt', 'README.windows.txt')
 elif env['OS_CONF'] == 'android':
-    returnValue += env.InstallAs('$CPP_DISTDIR/samples/README.txt', 'README.android.txt')
+    env.InstallAs('$CPP_DISTDIR/samples/README.txt', 'README.android.txt')
 elif env['OS_CONF'] == 'linux':
-    returnValue += env.InstallAs('$CPP_DISTDIR/samples/README.txt', 'README.linux.txt')
-
-Return ('returnValue')
+    env.InstallAs('$CPP_DISTDIR/samples/README.txt', 'README.linux.txt')

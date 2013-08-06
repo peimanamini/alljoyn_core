@@ -14,20 +14,15 @@
 #
 
 Import('env')
-clientDistDir = '$CPP_DISTDIR/samples/SampleDaemon'
-
-# return value is the collection of files installed in the build destination.
-returnValue = []
+clientDistDir = '$DISTDIR/cpp/samples/SampleDaemon'
 
 # Program binary
-prog = [ env.Program('SampleDaemon', ['SampleDaemon.cc']) ]
+prog = [ env.Program('SampleDaemon', 'SampleDaemon.cc') ]
 
 # The sample daemon binary is intended to be used by thin client apps and is
 # packaged with ThinClient SDK (Win7/Linux). It sets credentials so that
 # the thin client apps connect to it in a trusted manner (meaning: requires BD)
 
-if env['BD'] == 'on' and (env['OS'] == 'linux' or env['OS'] == 'win7'):
-    returnValue += env.Install('$CPP_DISTDIR/bin/samples', prog )
-    returnValue += env.Install(clientDistDir, env.Glob('*.cc'))
-
-Return ('returnValue')
+if env['BD'] == 'on' and env['OS'] in ['linux', 'win7']:
+    env.Install('$DISTDIR/cpp/bin/samples', prog )
+    env.Install(clientDistDir, env.Glob('*.cc'))

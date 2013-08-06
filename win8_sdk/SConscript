@@ -13,10 +13,9 @@
 #    limitations under the License.
 # 
 import os, zipfile
-Import('env')
+Import('ajenv')
 
-vsix_env = env.Clone();
-
+vsix_env = ajenv.Clone();
 
 # find the newest .NetFramework so we can use the 32 bit msbbuild.exe
 def FindNewestDotNet( ):

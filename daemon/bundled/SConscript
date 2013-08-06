@@ -13,10 +13,10 @@
 #    limitations under the License.
 # 
 
-Import('env')
+Import('daemon_env')
 
 # Build the bundled daemon object file
-obj = env.Object('BundledDaemon.cc')
+obj = daemon_env.Object('BundledDaemon.cc')
 
 Return('obj')
 

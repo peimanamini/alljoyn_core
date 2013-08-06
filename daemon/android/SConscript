@@ -13,6 +13,6 @@
 #    limitations under the License.
 # 
 
-Import('env')
-srcs = env.Glob('*.cc')
+Import('daemon_env')
+srcs = daemon_env.Glob('*.cc')
 Return('srcs')

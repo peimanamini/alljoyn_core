@@ -61,10 +61,6 @@
 #include "ClientTransport.h"
 #include "NullTransport.h"
 
-#if defined(QCC_OS_ANDROID)
-#include "android/WFDTransport.h"
-#endif
-
 #define QCC_MODULE "ALLJOYN"
 
 

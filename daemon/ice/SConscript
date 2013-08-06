@@ -13,12 +13,11 @@
 #    limitations under the License.
 # 
 
-Import('env')
+Import('daemon_env')
 
 # Make private headers available
-env.Append(CPPPATH=[env.Dir('../../daemon').srcnode()])
-env.Append(CPPPATH=[env.Dir('.').srcnode()])
+daemon_env.Append(CPPPATH=[daemon_env.Dir('.').srcnode()])
 
 # Include DaemoICETransport related files
-srcs = env.Glob('*.cc')
+srcs = daemon_env.Glob('*.cc')
 Return('srcs')

@@ -14,27 +14,24 @@
 # 
 
 import os
-Import('env', 'daemon_objs', 'common_objs', 'alljoyn_core_objs', 'bdobj')
+Import('daemon_env', 'daemon_objs', 'common_objs', 'alljoyn_core_objs', 'bdobj')
 
 # Add OS specific daemon_objs
-os_objs = env.Object(['ProximityScanner.cc', 'Socket.cc'])
+os_objs = daemon_env.Object(['ProximityScanner.cc', 'Socket.cc'])
 
-# TODO: Fix our dependencies so they don't "bleed" all over
-env.Append(CPPPATH=['..'])
-
-proximity_objs = SConscript('proximity/SConscript')
+proximity_objs = daemon_env.SConscript('proximity/SConscript', exports = ['daemon_env'])
 winmdswitch = '\"/WINMDFILE:%s\"' % os.path.abspath('AllJoyn.winmd')
-env.Append(LINKFLAGS=['/MANIFEST:NO', '/SUBSYSTEM:CONSOLE', '/TLBID:1', '/APPCONTAINER', '/WINMD', winmdswitch])
+daemon_env.Append(LINKFLAGS=['/MANIFEST:NO', '/SUBSYSTEM:CONSOLE', '/TLBID:1', '/APPCONTAINER', '/WINMD', winmdswitch])
 
-if env['CPU'] == 'arm':
-    env.Append(LINKFLAGS=['/INCREMENTAL:NO'])
+if daemon_env['CPU'] == 'arm':
+    daemon_env.Append(LINKFLAGS=['/INCREMENTAL:NO'])
 
 # Build the resources for the dll
-rsc = env.RES('DaemonResources.rc')
+rsc = daemon_env.RES('DaemonResources.rc')
 
 # Build the Windows daemon.
-alljoyn_libs = env.SharedLibrary('AllJoyn', daemon_objs + common_objs + alljoyn_core_objs + proximity_objs + os_objs)
-env.Install('$WINRT_DISTDIR/bin', 'AllJoyn.winmd') #put the *.winmd file in the bin folder
+alljoyn_libs = daemon_env.SharedLibrary('AllJoyn', daemon_objs + common_objs + alljoyn_core_objs + proximity_objs + os_objs)
+daemon_env.Install('$WINRT_DISTDIR/bin', 'AllJoyn.winmd') #put the *.winmd file in the bin folder
 
 progs = [alljoyn_libs] # alljoyn.dll will be returned
 Return('progs', 'os_objs')

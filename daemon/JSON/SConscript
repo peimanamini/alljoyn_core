@@ -13,11 +13,8 @@
 #    limitations under the License.
 # 
 
-Import('env')
-
-# Make private headers available
-env.Append(CPPPATH=[env.Dir('../../daemon').srcnode()])
+Import('daemon_env')
 
 # Build using JSON
-srcs = env.Glob('*.cc')
+srcs = daemon_env.Glob('*.cc')
 Return('srcs')

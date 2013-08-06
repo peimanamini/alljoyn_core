@@ -13,11 +13,11 @@
 #    limitations under the License.
 # 
 
-Import('env')
+Import('libenv')
 from os.path import basename
 
 # Clone env so we don't pollute the shared environment
-locenv = env.Clone()
+locenv = libenv.Clone()
 
 # We want to generate documentation for the winrt binding
 # ${TARGET} places the .xdc files next to the .obj files.

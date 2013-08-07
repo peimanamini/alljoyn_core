@@ -310,7 +310,7 @@ class SessionlessObj : public BusObject, public NameListener, public SessionList
     std::map<qcc::String, ChangeIdEntry> changeIdMap;
 
     qcc::Mutex lock;            /**< Mutex that protects messageMap this obj's data structures */
-    uint32_t nextChangeId;      /**< Change id assoc with next pushed signal */
+    uint32_t curChangeId;       /**< Change id assoc with current pushed signal(s) */
     uint32_t lastAdvChangeId;   /**< Last advertised change id */
     qcc::String lastAdvName;    /**< Last advertised name */
     qcc::String findPrefix;     /**< FindAdvertiseName prefix */
@@ -318,6 +318,7 @@ class SessionlessObj : public BusObject, public NameListener, public SessionList
     bool isDiscoveryStarted;    /**< True when FindAdvetiseName is ongoing */
     SessionOpts sessionOpts;    /**< SessionOpts used by internal session */
     SessionPort sessionPort;    /**< SessionPort used by internal session */
+    bool advanceChangeId;       /**< Set to true when changeId should be advanced on next SLS send request */
 };
 
 }

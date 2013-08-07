@@ -79,11 +79,12 @@ SessionlessObj::SessionlessObj(Bus& bus, BusController* busController) :
     ruleCountMap(),
     changeIdMap(),
     lock(),
-    nextChangeId(0),
+    curChangeId(0),
     lastAdvChangeId(-1),
     isDiscoveryStarted(false),
     sessionOpts(SessionOpts::TRAFFIC_MESSAGES, false, SessionOpts::PROXIMITY_ANY, TRANSPORT_ANY),
-    sessionPort(SESSIONLESS_SESSION_PORT)
+    sessionPort(SESSIONLESS_SESSION_PORT),
+    advanceChangeId(false)
 {
     /* Initialize findPrefix */
     findPrefix = WellKnownName;
@@ -320,7 +321,8 @@ QStatus SessionlessObj::PushMessage(Message& msg)
     /* Put the message in the map and kick the worker */
     MessageMapKey key(msg->GetSender(), msg->GetInterface(), msg->GetMemberName(), msg->GetObjectPath());
     lock.Lock();
-    pair<uint32_t, Message> val(nextChangeId++, msg);
+    advanceChangeId = true;
+    pair<uint32_t, Message> val(curChangeId, msg);
     map<MessageMapKey, pair<uint32_t, Message> >::iterator it = messageMap.find(key);
     if (it == messageMap.end()) {
         messageMap.insert(pair<MessageMapKey, pair<uint32_t, Message> >(key, val));
@@ -464,7 +466,7 @@ QStatus SessionlessObj::RereceiveMessages(const qcc::String& sender, const qcc::
 
     /* If all guids or self guid, retrieve from our own cache */
     if (guid.empty() || (guid == selfGuid)) {
-        HandleRangeRequest(sender.c_str(), 0, nextChangeId - (numeric_limits<uint32_t>::max() >> 1), nextChangeId);
+        HandleRangeRequest(sender.c_str(), 0, curChangeId - (numeric_limits<uint32_t>::max() >> 1), curChangeId + 1);
     }
 
     lock.Unlock();
@@ -651,8 +653,8 @@ void SessionlessObj::RequestSignalsSignalHandler(const InterfaceDescription::Mem
     uint32_t fromId;
     QStatus status = msg->GetArgs("u", &fromId);
     if (status == ER_OK) {
-        /* Send all signals in the half-max-uint32 range from [fromIdx, fromIdx + max(uint32)/2) */
-        HandleRangeRequest(msg->GetSender(), msg->GetSessionId(), fromId, fromId + (numeric_limits<uint32_t>::max() >> 1));
+        /* Send all signals in the range [fromId, curChangeId] */
+        HandleRangeRequest(msg->GetSender(), msg->GetSessionId(), fromId, curChangeId + 1);
     } else {
         QCC_LogError(status, ("Message::GetArgs failed"));
     }
@@ -681,8 +683,14 @@ void SessionlessObj::HandleRangeRequest(const char* sender, SessionId sessionId,
     /* Enable concurrency since PushMessage could block */
     bus.EnableConcurrentCallbacks();
 
-    /* Send all messages in messageMap in range [fromChangeId, toChangeId) */
+    /* Advance the curChangeId */
     lock.Lock();
+    if (advanceChangeId) {
+        ++curChangeId;
+        advanceChangeId = false;
+    }
+
+    /* Send all messages in messageMap in range [fromChangeId, toChangeId) */
     map<MessageMapKey, pair<uint32_t, Message> >::iterator it = messageMap.begin();
     uint32_t rangeLen = toChangeId - fromChangeId;
     while (it != messageMap.end()) {

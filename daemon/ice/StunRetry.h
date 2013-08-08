@@ -6,7 +6,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009,2012 Qualcomm Innovation Center, Inc.
+ * Copyright 2009,2012-2013 Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ class CheckRetry {
 
     bool IncrementAttempts(void);
 
-    double GetQueuedTimeOffset(void);
+    uint32_t GetQueuedTimeOffset(void);
 
   private:
 

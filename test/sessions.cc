@@ -1,5 +1,5 @@
 /*
- * Copyright 2011, Qualcomm Innovation Center, Inc.
+ * Copyright 2011-2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -298,7 +298,7 @@ class AutoChatThread : public Thread, public ThreadListener {
         }
 
         while (IsRunning() && count--) {
-            size_t len = minSize + (maxSize - minSize) * (((float)Rand16()) / (std::numeric_limits<uint16_t>::max()));
+            size_t len = minSize + static_cast<size_t>((maxSize - minSize) * (((float)Rand16()) / (std::numeric_limits<uint16_t>::max())));
             buf[len] = '\0';
             busObj.SendChatSignal(id, buf, 0);
             buf[len] = 'a' + (len % 26);

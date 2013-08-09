@@ -15,33 +15,61 @@
 
 import os
 
-vars = Variables()
-
-vars.Add('BINDINGS', 'Bindings to build (comma separated list - no spaces)', 'c,java,js,unity')
-
-
-# include the core
+# Get the global environment
 env = SConscript(['build_core/SConscript'])
 
+vars = Variables()
+
+vars.Add('BINDINGS', 'Bindings to build (comma separated list): cpp, c, java, js, unity', 'cpp,c,java,js,unity')
+vars.Add('SERVICES', 'AllJoyn services libraries to build (comma separated list): about, config, controlpanel, notifications, onboarding', 'about')
+vars.Add(EnumVariable('BUILD_SERVICES_SAMPLES', 'Build the services samples that require libxml2 and json libraries.', 'on', allowed_values = ['on', 'off']))
 vars.Update(env)
 Help(vars.GenerateHelpText(env))
 
-bindings = env['BINDINGS'].split(',')
+bindings = set([ b.strip()
+                 for b in env['BINDINGS'].split(',')
+                 if b == 'cpp' or os.path.exists('alljoyn_%s/SConscript' % b.strip()) ])
+services = set([ s.strip()
+                 for s in env['SERVICES'].split(',')
+                 if os.path.exists('services/%s/SConscript' % s.strip())])
 
-# Add/remove projects from build
+env['bindings'] = bindings
+env['services'] = services
+
+# Always build AllJoyn Core
 env.SConscript(['alljoyn_core/SConscript'])
 
-if ('java' in bindings) and os.path.exists('alljoyn_java/SConscript'):
-    env.SConscript(['alljoyn_java/SConscript'])
-
-if ('js' in bindings) and os.path.exists('alljoyn_js/SConscript'):
-    env.SConscript(['alljoyn_js/SConscript'])
-
-if ('c' in bindings) and os.path.exists('alljoyn_c/SConscript'):
+if bindings.intersection(['c', 'unity']):
+    # unity depends on the C bindings
     env.SConscript(['alljoyn_c/SConscript'])
 
-if ('unity' in bindings) and os.path.exists('alljoyn_unity/SConscript'):
-    env.SConscript(['alljoyn_unity/SConscript'])
+    if 'unity' in bindings:
+        env.SConscript(['alljoyn_unity/SConscript'])
+
+if 'java' in bindings:
+    env.SConscript(['alljoyn_java/SConscript'])
+
+if 'js' in bindings:
+    env.SConscript(['alljoyn_js/SConscript'])
+
+
+if services.intersection(['about', 'config', 'controlpanel', 'notification', 'onboarding']):
+    # config, controlpanel, notification, and onboarding all depend on about.
+    env.SConscript(['services/about/SConscript'])
+
+    if services.intersection(['config', 'onboarding']):
+        # onboarding also depends on config
+        env.SConscript(['services/config/SConscript'])
+
+        if 'onboarding' in services:
+            env.SConscript(['services/onboarding/SConscript'])
+
+    if 'controlpanel' in services:
+        env.SConscript(['services/controlpanel/SConscript'])
+
+    if 'notification' in services:
+        env.SConscript(['services/notification/SConscript'])
+
 
 #Build Win7 SDK installer
 if env.has_key('WIN7_MSI') and env['WIN7_MSI'] == 'true':

@@ -25,12 +25,13 @@ env.Append(CPPPATH = ['$DISTDIR/cpp/inc/alljoyn'])
 # Dependent Projects
 common_hdrs, common_objs = env.SConscript(['../common/SConscript'])
 
-ajenv = env.Clone()
 
 # Make alljoyn C++ dist a sub-directory of the alljoyn dist.
-ajenv['CPP_DISTDIR'] = ajenv['DISTDIR'] + '/cpp'
-ajenv['CPP_TESTDIR'] = ajenv['TESTDIR'] + '/cpp'
-ajenv['WINRT_DISTDIR'] = ajenv['DISTDIR'] + '/winRT'
+env['CPP_DISTDIR'] = env['DISTDIR'] + '/cpp'
+env['CPP_TESTDIR'] = env['TESTDIR'] + '/cpp'
+env['WINRT_DISTDIR'] = env['DISTDIR'] + '/winRT'
+
+ajenv = env.Clone()
 
 # Bullseye code coverage for 'debug' builds.
 if ajenv['VARIANT'] == 'debug':
@@ -88,7 +89,9 @@ libs, alljoyn_core_objs = ajenv.SConscript('$OBJDIR/SConscript', exports = ['aje
 
 ajenv.Install('$CPP_DISTDIR/lib', libs)
 
-env.Prepend(LIBS = 'alljoyn')
+if ajenv['OS_GROUP'] != 'winrt':
+    # Do not include alljoyn.lib in LIBS otherwise linking errors will occur.
+    env.Prepend(LIBS = 'alljoyn')
 
 # AllJoyn Daemon, daemon library, and bundled daemon object file
 daemon_progs, bdlib, bdobj = env.SConscript('$OBJDIR/daemon/SConscript', exports = ['common_objs', 'alljoyn_core_objs'])
@@ -97,13 +100,15 @@ if ajenv['OS_GROUP'] == 'winrt':
     # WinRT needs the full path to the exact file.
     env.Prepend(LIBS = [bdobj, bdlib])
     daemon_obj = [bdobj]
+
 else:
     ajenv.Install('$CPP_DISTDIR/bin', daemon_progs)
     ajenv.Install('$CPP_DISTDIR/lib', bdlib)
     daemon_obj = ajenv.Install('$CPP_DISTDIR/lib', bdobj)
-    # Need to prepend rather than append liballjoyn for Android builds.
+    # Need to prepend rather than append to ensure proper static library ordering
     if env['BD'] == 'on':
         env.Prepend(LIBS = [bdobj, 'ajdaemon'])
+
 
 # The global env needs the 'bdobj' for the Java binding
 env['bdobj'] = daemon_obj

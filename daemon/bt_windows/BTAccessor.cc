@@ -1335,22 +1335,10 @@ static bool GetSdpBusAddress(BLOB* blob, BDAddress* bdAddr)
         char dataString[STRING_BUFFER_SIZE];
         memset(dataString, 0, sizeof(dataString));
 
-#if 0   // Alternate way to get string.
-        wchar_t dataWString[STRING_BUFFER_SIZE];
-
-        status = ::BluetoothSdpGetString(blob->pBlobData,
-                                         blob->cbSize,
-                                         NULL,
-                                         STRING_NAME_OFFSET,    // Not sure what this should be.
-                                         dataWString,
-                                         &dataWString);
-        // TODO: Convert from TCHAR to char.
-#else
         memcpy_s(dataString,
                  sizeof(dataString) - sizeof(dataString[0]),  // Make sure result is nul terminated.
                  data.data.string.value,
                  data.data.string.length);
-#endif
 
         qcc::String addr(dataString);
         QStatus status = bdAddr->FromString(addr);

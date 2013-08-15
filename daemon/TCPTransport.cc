@@ -2277,13 +2277,6 @@ void TCPTransport::DisableDiscoveryInstance(ListenRequest& listenRequest)
  */
 static const char* ADDR4_DEFAULT = "0.0.0.0";
 
-#if 0
-/*
- * The TCP transport does not support IPv6 at this time
- */
-static const char* ADDR6_DEFAULT = "0::0";
-#endif
-
 /*
  * The default port for use in listen specs.  This port is used by the TCP
  * listener to listen for incoming connection requests.  This is the default

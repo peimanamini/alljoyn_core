@@ -158,12 +158,6 @@ QStatus UDPPacketStream::Stop()
 
 QStatus UDPPacketStream::PushPacketBytes(const void* buf, size_t numBytes, PacketDest& dest)
 {
-#if 0
-    if (rand() < (RAND_MAX / 100)) {
-        printf("Skipping packet with seqNum=0x%x\n", letoh16(*reinterpret_cast<const uint16_t*>((const char*)buf + 4)));
-        return ER_OK;
-    }
-#endif
 
     assert(numBytes <= mtu);
     size_t sendBytes = numBytes;

@@ -232,18 +232,6 @@ QStatus _VirtualEndpoint::AddSessionRef(SessionId id, SessionOpts* opts, RemoteE
 
     m_b2bEndpointsLock.Lock(MUTEX_CONTEXT);
 
-#if 0
-    /* Look for best B2B that matches SessionOpts */
-    multimap<SessionId, RemoteEndpoint*>::const_iterator it = m_b2bEndpoints.begin();
-    while ((it != m_b2bEndpoints.end()) && (it->first == 0)) {
-        map<RemoteEndpoint*, B2BInfo>::const_iterator bit = m_b2bInfos.find(it->second);
-        if ((bit != m_b2bInfos.end()) && (!opts || bit->second.opts.IsCompatible(*opts)) && (bit->second.hops < hops)) {
-            bestEp = it->second;
-            hops = bit->second.hops;
-        }
-        ++it;
-    }
-#else
     /* TODO: Placeholder until we exchange session opts and hop count via ExchangeNames */
     multimap<SessionId, RemoteEndpoint>::const_iterator it = m_b2bEndpoints.find(id);
     if (it == m_b2bEndpoints.end()) {
@@ -252,7 +240,6 @@ QStatus _VirtualEndpoint::AddSessionRef(SessionId id, SessionOpts* opts, RemoteE
     if ((it != m_b2bEndpoints.end()) && ((it->first == 0) || it->first == id)) {
         bestEp = it->second;
     }
-#endif
 
     /* Map session id to bestEp */
     if (bestEp->IsValid()) {

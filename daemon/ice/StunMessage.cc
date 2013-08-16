@@ -217,12 +217,13 @@ static QStatus ParseAttribute(const StunMessage& msg,
 
     bufSize -= attrSize;
 
-    if (attr) {
+    if ((attr) &&
+        (!((((static_cast<StunAttrType>(rawType)) == STUN_ATTR_MESSAGE_INTEGRITY) && (msg.GetTypeClass() == STUN_MSG_INDICATION_CLASS) && (msg.GetTypeMethod() == STUN_MSG_DATA_METHOD))))) {
         status = attr->Parse(buf, attrSize);
         QCC_DbgPrintf(("Parsed attribute: %s", attr->ToString().c_str()));
     } else {
         // Skip past the unknown attribute
-        QCC_DbgPrintf(("Skipping unknown attribute"));
+        QCC_DbgPrintf(("Skipping unknown attribute or message integrity for data indications"));
         buf += attrSize;
         status = ER_OK;
     }

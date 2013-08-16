@@ -48,7 +48,7 @@ QStatus StunAttributeMessageIntegrity::Parse(const uint8_t*& buf, size_t& bufSiz
     const uint8_t* pos = message.rawMsg;
     Crypto_SHA1 sha1;
 
-    QCC_DbgTrace(("StunAttributeMessageIntegrity::Parse(*buf, bufSize = %u, sg = <>)", bufSize));
+    QCC_DbgPrintf(("StunAttributeMessageIntegrity::Parse(*buf, bufSize = %u, sg = <>)", bufSize));
 
     digest = buf;
     buf += Crypto_SHA1::DIGEST_SIZE;
@@ -93,17 +93,13 @@ QStatus StunAttributeMessageIntegrity::Parse(const uint8_t*& buf, size_t& bufSiz
     QCC_DbgRemoteData(digest, Crypto_SHA1::DIGEST_SIZE);
     QCC_DbgLocalData(compDigest, Crypto_SHA1::DIGEST_SIZE);
 
-    // @@ JP THIS IS BROKEN
-#if 0
     if (memcmp(digest, compDigest, Crypto_SHA1::DIGEST_SIZE) != 0) {
-#else
-    if (false) {
-#endif
         miStatus = INVALID;
         status = ER_STUN_INVALID_MESSAGE_INTEGRITY;
-        QCC_LogError(status, ("Verifying message integrity"));
+        QCC_LogError(status, ("Invalid message integrity"));
     } else {
         miStatus = VALID;
+        QCC_DbgPrintf(("Verified Integrity"));
     }
 
 exit:

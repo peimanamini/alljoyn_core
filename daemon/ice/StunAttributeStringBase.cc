@@ -35,7 +35,7 @@ using namespace qcc;
 QStatus StunAttributeStringBase::Parse(const uint8_t*& buf, size_t& bufSize)
 {
     QStatus status;
-    QCC_DbgTrace(("StunAttributeStringBase::Parse(*buf, bufSize = %u)", bufSize));
+    QCC_DbgPrintf(("StunAttributeStringBase::Parse(*buf, bufSize = %u)", bufSize));
     QCC_DbgLocalData(&buf[0], bufSize);
 
     str = String(reinterpret_cast<const char*>(&buf[0]), bufSize);

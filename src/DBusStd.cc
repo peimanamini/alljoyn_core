@@ -107,7 +107,7 @@ QStatus org::freedesktop::DBus::CreateInterfaces(BusAttachment& bus) {
 
     /* Create the org.freedesktop.DBus.Peer interface */
     InterfaceDescription* peerIntf = NULL;
-    status = bus.CreateInterface(org::freedesktop::DBus::Peer::InterfaceName, peerIntf);
+    status = bus.CreateInterface(org::freedesktop::DBus::Peer::InterfaceName, peerIntf, AJ_IFC_SECURITY_OFF);
     if ((ER_OK != status) || !peerIntf) {
         if (ER_OK == status) status = ER_FAIL;
         QCC_LogError(status, ("Failed to create interface \"%s\"", org::freedesktop::DBus::Peer::InterfaceName));
@@ -119,7 +119,7 @@ QStatus org::freedesktop::DBus::CreateInterfaces(BusAttachment& bus) {
 
     /* Create the org.freedesktop.DBus.Properties interface */
     InterfaceDescription* propsIntf = NULL;
-    status = bus.CreateInterface(org::freedesktop::DBus::Properties::InterfaceName, propsIntf);
+    status = bus.CreateInterface(org::freedesktop::DBus::Properties::InterfaceName, propsIntf, AJ_IFC_SECURITY_OFF);
     if ((ER_OK != status) || !propsIntf) {
         if (ER_OK == status) status = ER_FAIL;
         QCC_LogError(status, ("Failed to create interface \"%s\"", org::freedesktop::DBus::Peer::InterfaceName));

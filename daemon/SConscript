@@ -32,6 +32,13 @@ if not daemon_env.has_key('ICE'):
 if not daemon_env.has_key('BT'):
     daemon_env['BT'] = 'off'
 
+if daemon_env['OS'] == 'android':
+    # Android Dalvik code is tied to the hip of daemon for proximity scanner
+    # functionality.  Let the build for Android know whether ICE support is
+    # available or not.
+    env['ANDROID_PROXIMITY'] = daemon_env['ICE']
+
+
 if daemon_env['OS'] == "darwin":
     # Darwin has its own version of the daemon transport
     srcs = [ f for f in daemon_env.Glob('*.cc') + daemon_env.Glob('*.c') + [daemon_env['OS'] + '/DaemonTransport.cc']]

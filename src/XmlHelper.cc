@@ -77,12 +77,12 @@ QStatus XmlHelper::ParseInterface(const XmlElement* elem, ProxyBusObject* obj)
     }
     /*
      * Security on an interface can be "true", "inherit", or "off"
-     * Security is implicitly off on the introspectable interface.
+     * Security is implicitly off on the standard DBus interfaces.
      */
     qcc::String sec = GetSecureAnnotation(elem);
     if (sec == "true") {
         secPolicy = AJ_IFC_SECURITY_REQUIRED;
-    } else if ((sec == "off") || (ifName == org::freedesktop::DBus::Introspectable::InterfaceName)) {
+    } else if ((sec == "off") || (ifName.find(org::freedesktop::DBus::InterfaceName) == 0)) {
         secPolicy = AJ_IFC_SECURITY_OFF;
     } else {
         if ((sec != qcc::String::Empty) && (sec != "inherit")) {

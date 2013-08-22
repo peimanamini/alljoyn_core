@@ -51,55 +51,38 @@ else:
     else:
         gtest_src_base = gtest_dir
 
-    if gtest_env['OS_CONF'] == 'android':
-        # Set the ABI based on the CPU
-        if gtest_env['CPU'] == 'arm':
-            android_eabi = 'armeabi'
-        else:
-            android_eabi = 'x86'
-        # Set the CPP PATH based on NDK version
-        if gtest_env.subst('$ANDROID_NDK_VERSION') in [ '8b', '8c', '8d' ]:
-            android_cpp_path = '$ANDROID_NDK/sources/cxx-stl/gnu-libstdc++/4.6'
-        elif gtest_env.subst('$ANDROID_NDK_VERSION') in [ '7',  '8']:
-            android_cpp_path = '$ANDROID_NDK/sources/cxx-stl/gnu-libstdc++'
-        else:
-            print 'common unit test build requires NDK v7 or newer'
-            android_cpp_path = None
-    else:
-        android_cpp_path = None
     if gtest_env['OS_CONF'] == 'windows':
         # gTest does not require the same CPPDEFINES as AllJoyn core.
         gtest_env.Append(CPPDEFINES = ['WIN32', '_LIB'])
         # don't use the _DEBUG define unless the /MDd compiler flag is specified
         #gtest_env.Append(CPPDEFINES = ['WIN32', '_DEBUG', '_LIB'])
         gtest_env.Append(CXXFLAGS = ['/EHsc'])
-        
+
+    if gtest_env['OS_CONF'] == 'android':
+        # This include directory needs to come first for Android so that it can find wcscasecmp
+        gtest_env.Prepend(CPPPATH = ['$ANDROID_NDK/sources/android/support/include'])
+
     # tr1::tuple is not avalible for android or darwin
     if gtest_env['OS_CONF'] == 'android' or gtest_env['OS_CONF'] == 'darwin':
         gtest_env.Append(CPPDEFINES = ['GTEST_HAS_TR1_TUPLE=0'])
+
     # clone() library function is NOT available on android-x86
     if gtest_env['OS_CONF'] == 'android' and gtest_env['CPU'] == 'x86':
         gtest_env.Append(CPPDEFINES = ['GTEST_HAS_CLONE=0'])
+
     # Microsoft Visual Studio 2012 has a different _VARIADIC_MAX default value.
     # See: http://blogs.msdn.com/b/vcblog/archive/2011/09/12/10209291.aspx
     if gtest_env['OS_CONF'] == 'windows' and gtest_env['MSVC_VERSION'] == '11.0':
         gtest_env.Append(CPPDEFINES = ['_VARIADIC_MAX=10'])
-    #we compile with no rtti and we are not using exceptions. 
+
+    # we compile with no rtti and we are not using exceptions. 
     gtest_env.Append(CPPDEFINES = ['GTEST_HAS_RTTI=0'])
+
     # we replace AllJoyn's include CPPPATH options.  AllJoyn includes stlport that will cause the 
     # gTest code to not compile as expected at this time
-    gtest_env.Replace(CPPPATH = [ gtest_src_base ])
+    gtest_env.Append(CPPPATH = [ gtest_src_base ])
     if gtest_dir != '/usr':
         gtest_env.Append(CPPPATH = [ gtest_env.Dir('$GTEST_DIR/include') ])
-
-
-    if gtest_env['OS_CONF'] == 'android':
-        # Android include paths
-        gtest_env.Append(CPPPATH=['$ANDROID_NDK/platforms/android-$ANDROID_API_LEVEL_NDK/arch-%s/usr/include' % gtest_env['CPU'],
-                                  #Using GNU STL instead of STLPORT
-                                  '%s/include' % android_cpp_path,
-                                  '%s/include/backward' % android_cpp_path,
-                                  '%s/libs/%s/include' % (android_cpp_path, android_eabi)])
 
     gtest_obj = gtest_env.StaticObject(target = 'gtest-all', source = [ '%s/src/gtest-all.cc' % gtest_src_base ])
     gtest_env.StaticLibrary(target = 'gtest', source = gtest_obj)
@@ -117,17 +100,8 @@ else:
     if unittest_env['OS_GROUP'] == 'windows':
         unittest_env.Append(CXXFLAGS = ['/EHsc'])
 
-    if unittest_env['OS_CONF'] == 'android':
-        # Android include paths
-        unittest_env.Append(CPPPATH=['$ANDROID_NDK/platforms/android-$ANDROID_API_LEVEL_NDK/arch-%s/usr/include' % unittest_env['CPU'],
-                                     #Using GNU STL instead of STLPORT
-                                     '%s/include' % android_cpp_path,
-                                     '%s/include/backward' % android_cpp_path,
-                                     '%s/libs/%s/include' % (android_cpp_path, android_eabi),
-                                     '$ANDROID_SRC/external/bluetooth/bluez/include',
-                                     '$ANDROID_SRC/external/openssl/include'])
 
-    #we compile with no rtti and we are not using exceptions.
+    # we compile with no rtti and we are not using exceptions.
     unittest_env.Append(CPPDEFINES = ['GTEST_HAS_RTTI=0'])
     
     # tr1::tuple is not avalible for android or darwin
@@ -137,12 +111,9 @@ else:
         unittest_env.Append(CPPDEFINES = ['GTEST_HAS_CLONE=0'])
     if unittest_env['OS_CONF'] == 'windows' and unittest_env['MSVC_VERSION'] == '11.0':
         unittest_env.Append(CPPDEFINES = ['_VARIADIC_MAX=10'])
-    #gtest library file is placed on folder above the the object files.
+    # gtest library file is placed on folder above the the object files.
     unittest_env.Append(LIBPATH = ['./'])
     
-    #the linker must be able to find stlport for android
-    if unittest_env['OS_CONF'] == 'android':
-        unittest_env.Append(LIBPATH = ['$ANDROID_NDK/platforms/android-$ANDROID_API_LEVEL_NDK/arch-%s/usr/lib' % unittest_env['CPU']])
     unittest_env.Prepend(LIBS = ['gtest'])
 
     obj = unittest_env.Object(test_src);
@@ -150,7 +121,7 @@ else:
     unittest_prog = unittest_env.Program('ajtest', obj)
     unittest_env.Install('$TESTDIR/cpp/bin', unittest_prog)
 
-    #install gtest utilities
+    # install gtest utilities
     unittest_env.Install('$TESTDIR/cpp/bin', Dir('test_report').srcnode())
 
 if (env['OS'] == 'win8' and

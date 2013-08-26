@@ -232,9 +232,11 @@ InterfaceDescription::InterfaceDescription(const char* name, InterfaceSecurityPo
 {
     if (secPolicy != AJ_IFC_SECURITY_INHERIT) {
         /*
-         * We don't allow a secure annotaction on the introspectable interface
+         * We don't allow a secure annotation on the standard DBus Interfaces
          */
-        if (strcmp(name, org::freedesktop::DBus::Introspectable::InterfaceName) != 0) {
+        if ((strcmp(name, org::freedesktop::DBus::Introspectable::InterfaceName) != 0) &&
+            (strcmp(name, org::freedesktop::DBus::Peer::InterfaceName)           != 0) &&
+            (strcmp(name, org::freedesktop::DBus::Properties::InterfaceName)     != 0)) {
             defs->annotations[org::alljoyn::Bus::Secure] = (secPolicy == AJ_IFC_SECURITY_REQUIRED) ? "true" : "off";
         }
     }

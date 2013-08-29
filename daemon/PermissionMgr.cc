@@ -38,7 +38,7 @@ PermissionMgr::DaemonBusCallPolicy PermissionMgr::GetDaemonBusCallPolicy(BusEndp
         } else if (sender->GetEndpointType() == ENDPOINT_TYPE_REMOTE) {
             RemoteEndpoint rEndpoint = RemoteEndpoint::cast(sender);
             QCC_DbgPrintf(("This is a RemoteEndpoint. ConnSpec = %s", rEndpoint->GetConnectSpec().c_str()));
-            if ((rEndpoint->GetConnectSpec() == "unix") || (rEndpoint->GetConnectSpec() == "localhost")) {
+            if ((rEndpoint->GetConnectSpec() == "unix") || (rEndpoint->GetConnectSpec() == "localhost") || (rEndpoint->GetConnectSpec() == "slap")) {
                 policy = STDBUSCALL_ALLOW_ACCESS_SERVICE_ANY;
             } else if (rEndpoint->GetConnectSpec() == "tcp") {
                 if (!rEndpoint->IsTrusted()) {
@@ -48,7 +48,7 @@ PermissionMgr::DaemonBusCallPolicy PermissionMgr::GetDaemonBusCallPolicy(BusEndp
                 }
             } else {
                 policy = STDBUSCALL_SHOULD_REJECT;
-                QCC_LogError(ER_FAIL, ("Unrecognized connect spec for endpoint:%s", sender->GetUniqueName().c_str()));
+                QCC_LogError(ER_FAIL, ("Unrecognized connect spec for endpoint:%s. connectspec=%s", sender->GetUniqueName().c_str(), rEndpoint->GetConnectSpec().c_str()));
             }
         } else if (sender->GetEndpointType() == ENDPOINT_TYPE_BUS2BUS || sender->GetEndpointType() == ENDPOINT_TYPE_VIRTUAL) {
             policy = STDBUSCALL_SHOULD_REJECT;

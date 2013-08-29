@@ -50,6 +50,10 @@
 #include "Transport.h"
 #include "TCPTransport.h"
 #include "DaemonTransport.h"
+#if defined(QCC_OS_LINUX)
+#include "DaemonSLAPTransport.h"
+#endif
+
 #if defined(AJ_ENABLE_ICE)
 #include "DaemonICETransport.h"
 #endif
@@ -110,6 +114,9 @@ static const char
     "  <listen>launchd:env=DBUS_LAUNCHD_SESSION_BUS_SOCKET</listen>"
 #if defined(AJ_ENABLE_BT)
     "  <listen>bluetooth:</listen>"
+#endif
+#if defined(QCC_OS_LINUX)
+//    "  <listen>slap:type=uart,dev=/dev/ttyUSB0,baud=115200</listen>"
 #endif
     "  <listen>tcp:r4addr=0.0.0.0,r4port=9955</listen>"
 #if defined(QCC_OS_ANDROID)
@@ -185,6 +192,7 @@ class OptParse {
 #if defined(AJ_ENABLE_ICE)
         noICE(false),
 #endif
+        noSLAP(false),
         noTCP(false),
         noWFD(false),
         noLaunchd(false),
@@ -211,6 +219,9 @@ class OptParse {
         return noBT;
     }
 #endif
+    bool GetNoSLAP() const {
+        return noSLAP;
+    }
 #if defined(AJ_ENABLE_ICE)
     bool GetNoICE() const {
         return noICE;
@@ -257,6 +268,7 @@ class OptParse {
 #if defined(AJ_ENABLE_ICE)
     bool noICE;
 #endif
+    bool noSLAP;
     bool noTCP;
     bool noWFD;
     bool noLaunchd;
@@ -291,7 +303,7 @@ void OptParse::PrintUsage() {
 #if defined(AJ_ENABLE_ICE)
         "[--no-ice] "
 #endif
-        "[--no-tcp] [--no-wfd] [--no-launchd]\n"
+        "[--no-slap] [--no-tcp] [--no-wfd] [--no-launchd]\n"
         "%*s  [--no-switch-user] [--verbosity=LEVEL] [--version]\n\n"
         "    --session\n"
         "        Use the standard configuration for the per-login-session message bus.\n\n"
@@ -322,6 +334,8 @@ void OptParse::PrintUsage() {
         "    --no-ice\n"
         "        Disable the ICE transport (override config file setting).\n\n"
 #endif
+        "    --no-slap\n"
+        "        Disable the SLAP transport (override config file setting).\n\n"
         "    --no-tcp\n"
         "        Disable the TCP transport (override config file setting).\n\n"
         "    --no-wfd\n"
@@ -457,6 +471,8 @@ OptParse::ParseResultCode OptParse::ParseResult()
 #if defined(AJ_ENABLE_BT)
             noBT = true;
 #endif
+        } else if (arg.compare("--no-slap") == 0) {
+            noSLAP = true;
         } else if (arg.compare("--no-ice") == 0) {
 #if defined(AJ_ENABLE_ICE)
             noICE = true;
@@ -571,6 +587,9 @@ int daemon(OptParse& opts) {
             skip = opts.GetNoBT();
 #endif
 
+        } else if (addrStr.compare(0, sizeof("slap:") - 1, "slap:") == 0) {
+            skip = opts.GetNoSLAP();
+
         } else {
             Log(LOG_ERR, "Unsupported listen address: %s (ignoring)\n", addrStr.c_str());
             continue;
@@ -599,6 +618,9 @@ int daemon(OptParse& opts) {
 
     TransportFactoryContainer cntr;
     cntr.Add(new TransportFactory<DaemonTransport>(DaemonTransport::TransportName, false));
+#if defined(QCC_OS_LINUX)
+    cntr.Add(new TransportFactory<DaemonSLAPTransport>(DaemonSLAPTransport::TransportName, false));
+#endif
     cntr.Add(new TransportFactory<TCPTransport>(TCPTransport::TransportName, false));
 #if defined(AJ_ENABLE_BT)
     cntr.Add(new TransportFactory<BTTransport> ("bluetooth", false));

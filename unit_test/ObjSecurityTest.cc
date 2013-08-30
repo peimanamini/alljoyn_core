@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2013-2014, Qualcomm Innovation Center, Inc.
+ * Copyright 2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -1732,10 +1732,10 @@ class SignalReceiver : public MessageReceiver {
     }
 
     void SignalHandler(const InterfaceDescription::Member* member, const char* sourcePath, Message& msg) {
-        signalReceived = true;
         if (msg->IsEncrypted()) {
             msgEncrypted = true;;
         }
+        signalReceived = true;
     }
 
     bool signalReceived;
@@ -1800,13 +1800,14 @@ TEST_F(ObjectSecurityTest, Test20) {
     //Wait for a maximum of 3 sec for signal to be arrived
     for (int i = 0; i < 300; ++i) {
         qcc::Sleep(10);
-        if (serviceObject.objectRegistered) {
+        if (serviceObject.objectRegistered && signalReceiver.signalReceived) {
             break;
         }
     }
-    ASSERT_TRUE(signalReceiver.signalReceived);
-    ASSERT_FALSE(signalReceiver.msgEncrypted);
 
+    EXPECT_TRUE(serviceObject.objectRegistered);
+    EXPECT_TRUE(signalReceiver.signalReceived);
+    EXPECT_FALSE(signalReceiver.msgEncrypted);
 }
 
 
@@ -1869,13 +1870,14 @@ TEST_F(ObjectSecurityTest, Test21) {
     //Wait for a maximum of 3 sec for signal to be arrived
     for (int i = 0; i < 300; ++i) {
         qcc::Sleep(10);
-        if (serviceObject.objectRegistered) {
+        if (serviceObject.objectRegistered && signalReceiver.signalReceived) {
             break;
         }
     }
-    ASSERT_TRUE(signalReceiver.signalReceived);
-    ASSERT_FALSE(signalReceiver.msgEncrypted);
 
+    EXPECT_TRUE(serviceObject.objectRegistered);
+    EXPECT_TRUE(signalReceiver.signalReceived);
+    EXPECT_FALSE(signalReceiver.msgEncrypted);
 }
 
 
@@ -1937,13 +1939,14 @@ TEST_F(ObjectSecurityTest, Test22) {
     //Wait for a maximum of 3 sec for signal to be arrived
     for (int i = 0; i < 300; ++i) {
         qcc::Sleep(10);
-        if (serviceObject.objectRegistered) {
+        if (serviceObject.objectRegistered && signalReceiver.signalReceived) {
             break;
         }
     }
-    ASSERT_TRUE(signalReceiver.signalReceived);
-    ASSERT_TRUE(signalReceiver.msgEncrypted);
 
+    EXPECT_TRUE(serviceObject.objectRegistered);
+    EXPECT_TRUE(signalReceiver.signalReceived);
+    EXPECT_TRUE(signalReceiver.msgEncrypted);
 }
 
 
@@ -2005,13 +2008,14 @@ TEST_F(ObjectSecurityTest, Test23) {
     //Wait for a maximum of 3 sec for signal to be arrived
     for (int i = 0; i < 300; ++i) {
         qcc::Sleep(10);
-        if (serviceObject.objectRegistered) {
+        if (serviceObject.objectRegistered && signalReceiver.signalReceived) {
             break;
         }
     }
-    ASSERT_TRUE(signalReceiver.signalReceived);
-    ASSERT_FALSE(signalReceiver.msgEncrypted);
 
+    EXPECT_TRUE(serviceObject.objectRegistered);
+    EXPECT_TRUE(signalReceiver.signalReceived);
+    EXPECT_FALSE(signalReceiver.msgEncrypted);
 }
 
 
@@ -2073,13 +2077,14 @@ TEST_F(ObjectSecurityTest, Test24) {
     //Wait for a maximum of 3 sec for signal to be arrived
     for (int i = 0; i < 300; ++i) {
         qcc::Sleep(10);
-        if (serviceObject.objectRegistered) {
+        if (serviceObject.objectRegistered && signalReceiver.signalReceived) {
             break;
         }
     }
-    ASSERT_TRUE(signalReceiver.signalReceived);
-    ASSERT_TRUE(signalReceiver.msgEncrypted);
 
+    EXPECT_TRUE(serviceObject.objectRegistered);
+    EXPECT_TRUE(signalReceiver.signalReceived);
+    EXPECT_TRUE(signalReceiver.msgEncrypted);
 }
 
 
@@ -2142,13 +2147,14 @@ TEST_F(ObjectSecurityTest, Test25) {
     //Wait for a maximum of 3 sec for signal to be arrived
     for (int i = 0; i < 300; ++i) {
         qcc::Sleep(10);
-        if (serviceObject.objectRegistered) {
+        if (serviceObject.objectRegistered && signalReceiver.signalReceived) {
             break;
         }
     }
-    ASSERT_TRUE(signalReceiver.signalReceived);
-    ASSERT_TRUE(signalReceiver.msgEncrypted);
 
+    EXPECT_TRUE(serviceObject.objectRegistered);
+    EXPECT_TRUE(signalReceiver.signalReceived);
+    EXPECT_TRUE(signalReceiver.msgEncrypted);
 }
 
 

@@ -544,9 +544,10 @@ void DaemonSLAPTransport::EndpointExit(RemoteEndpoint& ep)
 void* DaemonSLAPTransport::Run(void* arg)
 {
 
-    QStatus status;
+    QStatus status = ER_OK;
+    m_lock.Lock(MUTEX_CONTEXT);
+
     while (!IsStopping()) {
-        m_lock.Lock(MUTEX_CONTEXT);
         /*
          * Each time through the loop we create a set of events to wait on.
          * We need to wait on the stop event and all of the SocketFds of the
@@ -557,7 +558,7 @@ void* DaemonSLAPTransport::Run(void* arg)
          */
         QCC_DbgPrintf(("DaemonSLAPTransport::Run()"));
 
-        UARTFd uartFd;
+        UARTFd uartFd = -1;
         set<DaemonSLAPEndpoint>::iterator i = m_authList.begin();
         while (i != m_authList.end()) {
             uartFd = -1;
@@ -594,6 +595,7 @@ void* DaemonSLAPTransport::Run(void* arg)
         }
         i = m_endpointList.begin();
         while (i != m_endpointList.end()) {
+            uartFd = -1;
             DaemonSLAPEndpoint ep = *i;
 
             _DaemonSLAPEndpoint::EndpointState endpointState = ep->GetEpState();
@@ -652,9 +654,9 @@ void* DaemonSLAPTransport::Run(void* arg)
             if (i->listenFd == -1) {
                 /* open the port and set listen fd */
                 UARTFd listenFd;
-                status = UART(i->args["dev"], StringToU32(i->args["baud"]), listenFd);
+                QStatus uartStatus = UART(i->args["dev"], StringToU32(i->args["baud"]), listenFd);
 
-                if (status == ER_OK && listenFd != -1) {
+                if (uartStatus == ER_OK && listenFd != -1) {
                     i->listenFd = listenFd;
                     checkEvents.push_back(new Event(i->listenFd, Event::IO_READ, false));
                     QCC_DbgPrintf(("Adding checkevent %s to list of events", i->args["dev"].c_str()));
@@ -669,10 +671,11 @@ void* DaemonSLAPTransport::Run(void* arg)
         }
 
         m_lock.Unlock(MUTEX_CONTEXT);
-        QStatus status = Event::Wait(checkEvents, signaledEvents);
+        status = Event::Wait(checkEvents, signaledEvents);
         if (ER_OK != status) {
             break;
         }
+        m_lock.Lock(MUTEX_CONTEXT);
         for (vector<qcc::Event*>::iterator i = signaledEvents.begin(); i != signaledEvents.end(); ++i) {
             if (*i == &stopEvent) {
                 /* This thread has been alerted or is being stopped. Will check the IsStopping()
@@ -689,13 +692,16 @@ void* DaemonSLAPTransport::Run(void* arg)
                         static const bool truthiness = true;
                         DaemonSLAPTransport* ptr = this;
                         uint32_t packetSize = SLAP_DEFAULT_PACKET_SIZE;
+
                         QCC_DbgPrintf(("Creating ep"));
                         DaemonSLAPEndpoint conn(ptr, m_bus, truthiness, "slap", i->listenFd, packetSize);
                         QCC_DbgPrintf(("Created ep"));
-                        conn->Authenticate();
-                        QCC_DbgPrintf(("called auhenticate"));
 
-                        m_authList.insert(conn);
+                        status = conn->Authenticate();
+                        QCC_DbgPrintf(("called auhenticate"));
+                        if (status == ER_OK) {
+                            m_authList.insert(conn);
+                        }
                         break;
                     }
                 }
@@ -703,6 +709,7 @@ void* DaemonSLAPTransport::Run(void* arg)
             }
         }
     }
+    m_lock.Unlock(MUTEX_CONTEXT);
 
     return (void*) status;
 }

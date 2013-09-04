@@ -578,11 +578,14 @@ QStatus SessionlessObj::HandleFoundAdvertisedName(const char* name, TransportMas
     map<String, ChangeIdEntry>::iterator it = changeIdMap.find(guid);
     bool updateChangeIdMap = (it == changeIdMap.end()) || IS_GREATER(uint32_t, changeId, it->second.changeId);
     if (updateChangeIdMap || !isNewAdv) {
+        SessionlessObj* slObj = this;
+
         /* Setup for joinSession at random time between now and 256ms from now */
         uint32_t delay = qcc::Rand8();
         if (it == changeIdMap.end()) {
             changeIdMap.insert(pair<String, ChangeIdEntry>(guid, ChangeIdEntry(name, transport, numeric_limits<uint32_t>::max(), changeId, qcc::GetTimestamp64() + delay)));
-            status = timer.AddAlarm(Alarm(++delay, this));
+            ++delay;
+            status = timer.AddAlarm(Alarm(delay, slObj));
         } else {
             if (isNewAdv) {
                 it->second.advName = name;
@@ -592,7 +595,8 @@ QStatus SessionlessObj::HandleFoundAdvertisedName(const char* name, TransportMas
             }
             if (!it->second.inProgress) {
                 it->second.nextJoinTimestamp = qcc::GetTimestamp64() + delay;
-                status = timer.AddAlarm(Alarm(++delay, this));
+                ++delay;
+                status = timer.AddAlarm(Alarm(delay, slObj));
             }
         }
     }
@@ -928,7 +932,9 @@ void SessionlessObj::JoinSessionCB(QStatus status, SessionId id, const SessionOp
                 /* Retry join with random backoff of 200ms to ~8.5s */
                 uint32_t delay = 200 + (qcc::Rand16() >> 3);
                 cit->second.nextJoinTimestamp = GetTimestamp64() + delay;
-                timer.AddAlarm(Alarm(++delay, this));
+                ++delay;
+                SessionlessObj* slObj = this;
+                timer.AddAlarm(Alarm(delay, slObj));
             } else {
                 /* Retries exhausted. Clear state and wait for new advertisment */
                 changeIdMap.erase(cit);

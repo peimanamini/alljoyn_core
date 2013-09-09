@@ -377,11 +377,11 @@ QStatus HttpConnection::Connect(SocketFd sock)
             const char* caCert;
 
             caCert = RendezvousServerCACertificate;
-            if (host == "rdvs-test.qualcomm.com") {
+            if (host == "connect-test.qualcomm.com") {
                 rootCert = RendezvousTestServerRootCertificate;
-            } else if (host == "rdvs.alljoyn.org") {
+            } else if (host == "connect.alljoyn.org") {
                 rootCert = RendezvousDeploymentServerRootCertificate;
-            } else if (host == "rdvs-stg.alljoyn.org") {
+            } else if (host == "connect-stg.alljoyn.org") {
                 rootCert = RendezvousStageServerRootCertificate;
             } else {
                 status = ER_RENDEZVOUS_SERVER_ROOT_CERTIFICATE_UNINITIALIZED;

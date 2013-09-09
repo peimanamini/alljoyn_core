@@ -140,7 +140,7 @@ DiscoveryManager::DiscoveryManager(BusAttachment& bus) :
     DaemonConfig* config = DaemonConfig::Access();
 
     /* Retrieve the Rendezvous Server address from the config file */
-    RendezvousServer = config->Get("ice_discovery_manager/property@server", "rdvs.alljoyn.org");
+    RendezvousServer = config->Get("ice_discovery_manager/property@server", "connect.alljoyn.org");
 
     /* Retrieve the connection protocol to be used */
     if (config->Get("ice_discovery_manager/property@protocol") == "HTTP") {

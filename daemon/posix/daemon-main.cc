@@ -144,7 +144,7 @@ static const char
     "  </ice>"
     "  <ice_discovery_manager>"
     "    <property interfaces=\"*\"/>"
-    "    <property server=\"rdvs.alljoyn.org\"/>"
+    "    <property server=\"connect.alljoyn.org\"/>"
     "    <property protocol=\"HTTPS\"/>"
     "    <property enable_ipv6=\"false\"/>"
     "  </ice_discovery_manager>"

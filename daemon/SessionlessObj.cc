@@ -841,7 +841,7 @@ void SessionlessObj::AlarmTriggered(const Alarm& alarm, QStatus reason)
                     }
                 } else {
                     cit->second.inProgress = false;
-                    QCC_LogError(status, ("Exhausted joinSession retries to %s", cit->second.advName.c_str()));
+                    QCC_LogError(ER_FAIL, ("Exhausted joinSession retries to %s", cit->second.advName.c_str()));
                 }
             }
             ++cit;

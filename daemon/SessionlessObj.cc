@@ -776,7 +776,6 @@ void SessionlessObj::AlarmTriggered(const Alarm& alarm, QStatus reason)
                 messageMap.erase(it++);
             } else {
                 maxChangeId = max(maxChangeId, it->second.first);
-                tilExpire = min(tilExpire, expire);
                 mapIsEmpty = false;
                 ++it;
             }

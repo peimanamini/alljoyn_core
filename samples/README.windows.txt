@@ -21,6 +21,4 @@ SampleDaemon -
          via the command-line, that is quietly advertised, to be discovered
          by thin-client applications (eg. apps running on Arduino Due)
 
-Windows -
-         This directory includes programs with a graphical UI and more
-         interesting functionality such as "Chat" and "PhotoChat".
+

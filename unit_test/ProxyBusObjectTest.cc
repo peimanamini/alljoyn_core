@@ -47,6 +47,7 @@ class ProxyBusObjectTestMethodHandlers {
 class ProxyBusObjectTest : public testing::Test {
   public:
     ProxyBusObjectTest() :
+        status(ER_FAIL),
         bus("ProxyBusObjectTest", false),
         servicebus("ProxyBusObjectTestservice", false)
     { };
@@ -58,8 +59,10 @@ class ProxyBusObjectTest : public testing::Test {
         EXPECT_EQ(ER_OK, status) << "  Actual Status: " << QCC_StatusText(status);
     }
 
-//    virtual void TearDown() {
-//    }
+    virtual void TearDown() {
+        bus.Stop();
+        bus.Join();
+    }
 
     void SetUpProxyBusObjectTestService()
     {
@@ -439,4 +442,25 @@ TEST_F(ProxyBusObjectTest, AddChild_regressionTest) {
     numChildren = proxyObj.GetChildren();
     //if ALLJOYN-1908 were not fixed this would return 1
     EXPECT_EQ((size_t)2, numChildren);
+}
+
+// ALLJOYN-2043
+TEST_F(ProxyBusObjectTest, AddPropertyInterfaceError) {
+    const InterfaceDescription* propIntf = bus.GetInterface(::ajn::org::freedesktop::DBus::Properties::InterfaceName);
+
+    InterfaceDescription* testIntf = NULL;
+    bus.CreateInterface("org.alljoyn.test.ProxyBusObjectTest", testIntf, false);
+    status = testIntf->AddMember(MESSAGE_METHOD_CALL, "ping", "s", "s", "in,out", 0);
+    EXPECT_EQ(ER_OK, status) << "  Actual Status: " << QCC_StatusText(status);
+    status = testIntf->AddProperty("stringProp", "s", PROP_ACCESS_RW);
+    EXPECT_EQ(ER_OK, status) << "  Actual Status: " << QCC_StatusText(status);
+    testIntf->Activate();
+
+    ProxyBusObject proxyObj(bus, NULL, NULL, 0);
+
+    status = proxyObj.AddInterface(*propIntf);
+    EXPECT_EQ(ER_OK, status) << "  Actual Status: " << QCC_StatusText(status);
+
+    status = proxyObj.AddInterface(*testIntf);
+    EXPECT_EQ(ER_OK, status) << "  Actual Status: " << QCC_StatusText(status);
 }

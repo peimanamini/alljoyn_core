@@ -400,20 +400,26 @@ QStatus ProxyBusObject::AddInterface(const InterfaceDescription& iface) {
     StringMapKey key = iface.GetName();
     pair<StringMapKey, const InterfaceDescription*> item(key, &iface);
     lock->Lock(MUTEX_CONTEXT);
+    if (!hasProperties && iface == *(bus->GetInterface(::ajn::org::freedesktop::DBus::Properties::InterfaceName))) {
+        hasProperties = true;
+    }
     pair<map<StringMapKey, const InterfaceDescription*>::const_iterator, bool> ret = components->ifaces.insert(item);
     QStatus status = ret.second ? ER_OK : ER_BUS_IFACE_ALREADY_EXISTS;
-    lock->Unlock(MUTEX_CONTEXT);
 
     /* Add org.freedesktop.DBus.Properties interface implicitly if iface specified properties */
     if ((status == ER_OK) && !hasProperties && (iface.GetProperties() > 0)) {
         const InterfaceDescription* propIntf = bus->GetInterface(::ajn::org::freedesktop::DBus::Properties::InterfaceName);
         if (propIntf) {
             hasProperties = true;
-            status = AddInterface(*propIntf);
+            StringMapKey propKey = ::ajn::org::freedesktop::DBus::Properties::InterfaceName;
+            pair<StringMapKey, const InterfaceDescription*> propItem(propKey, propIntf);
+            pair<map<StringMapKey, const InterfaceDescription*>::const_iterator, bool> ret = components->ifaces.insert(propItem);
+            status = ret.second ? ER_OK : ER_BUS_IFACE_ALREADY_EXISTS;
         } else {
             status = ER_BUS_NO_SUCH_INTERFACE;
         }
     }
+    lock->Unlock(MUTEX_CONTEXT);
     return status;
 }
 

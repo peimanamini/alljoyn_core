@@ -699,6 +699,7 @@ void* DaemonSLAPTransport::Run(void* arg)
                         break;
                     }
                 }
+                delete e;
             }
         }
     }

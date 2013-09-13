@@ -760,7 +760,7 @@ void SessionlessObj::AlarmTriggered(const Alarm& alarm, QStatus reason)
 {
     QCC_DbgTrace(("SessionlessObj::AlarmTriggered(alarm, %s)", QCC_StatusText(reason)));
 
-    QStatus status;
+    QStatus status = ER_OK;
 
     if (reason == ER_OK) {
         uint32_t tilExpire = ::numeric_limits<uint32_t>::max();

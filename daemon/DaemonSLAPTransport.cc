@@ -72,7 +72,7 @@ class _DaemonSLAPEndpoint : public _RemoteEndpoint {
     _DaemonSLAPEndpoint(DaemonSLAPTransport* transport, BusAttachment& bus, bool incoming, const qcc::String connectSpec, UARTFd fd, uint32_t packetSize) :
         _RemoteEndpoint(bus, incoming, connectSpec, &m_stream, DaemonSLAPTransport::TransportName),
         m_transport(transport), m_authThread(this), m_fd(fd), m_authState(AUTH_INITIALIZED), m_epState(EP_INITIALIZED),
-        m_timer("UARTDisp", true, 1, false, 10),
+        m_timer("SLAPEp", true, 1, false, 10),
         m_rawStream(fd),
         m_stream(&m_rawStream, m_timer, packetSize, 4),
         m_uartController(&m_rawStream, bus.GetInternal().GetIODispatch(), &m_stream)
@@ -155,6 +155,7 @@ QStatus _DaemonSLAPEndpoint::Authenticate(void)
         status = m_authThread.Start(this);
     }
     if (status != ER_OK) {
+        QCC_DbgPrintf(("DaemonSLAPEndpoint::Authenticate() Failed to authenticate endpoint"));
         m_authState = AUTH_FAILED;
         /* Alert the Run() thread to refresh the list of com ports to listen on. */
         m_transport->Alert();
@@ -322,7 +323,7 @@ void* _DaemonSLAPEndpoint::AuthThread::Run(void* arg)
     DaemonSLAPEndpoint dEp = DaemonSLAPEndpoint::wrap(m_endpoint);
     m_endpoint->m_transport->Authenticated(dEp);
 
-    QCC_DbgTrace(("DaemonSLAPEndpoint::AuthThread::Run(): Returning"));
+    QCC_DbgPrintf(("DaemonSLAPEndpoint::AuthThread::Run(): Returning"));
 
     /*
      * We are now done with the authentication process.  We have succeeded doing
@@ -583,7 +584,7 @@ void* DaemonSLAPTransport::Run(void* arg)
                 for (list<ListenEntry>::iterator it = m_listenList.begin(); it != m_listenList.end(); it++) {
 
                     if (it->listenFd == uartFd) {
-                        QCC_DbgPrintf(("Reenabling back %s in the listenEvents", it->args["port"].c_str()));
+                        QCC_DbgPrintf(("DaemonSLAPTransport::Run(): Reenabling %s in the listenEvents", it->args["port"].c_str()));
                         it->listenFd = -1;
                         it->endpointStarted = false;
                         Thread::Alert();
@@ -638,7 +639,7 @@ void* DaemonSLAPTransport::Run(void* arg)
                 for (list<ListenEntry>::iterator it = m_listenList.begin(); it != m_listenList.end(); it++) {
 
                     if (it->listenFd == uartFd) {
-                        QCC_DbgPrintf(("Reenabling back %s in the listenEvents", it->args["port"].c_str()));
+                        QCC_DbgPrintf(("DaemonSLAPTransport::Run(): Reenabling back %s in the listenEvents", it->args["port"].c_str()));
                         it->listenFd = -1;
                         it->endpointStarted = false;
                         break;
@@ -659,14 +660,14 @@ void* DaemonSLAPTransport::Run(void* arg)
                 if (uartStatus == ER_OK && listenFd != -1) {
                     i->listenFd = listenFd;
                     checkEvents.push_back(new Event(i->listenFd, Event::IO_READ, false));
-                    QCC_DbgPrintf(("Adding checkevent %s to list of events", i->args["dev"].c_str()));
+                    QCC_DbgPrintf(("DaemonSLAPTransport::Run(): Adding checkevent for %s to list of events", i->args["dev"].c_str()));
                 } else {
-                    QCC_LogError(ER_OK, ("Failed to open %s", i->args["dev"].c_str()));
+                    QCC_LogError(uartStatus, ("DaemonSLAPTransport::Run(): Failed to open for %s", i->args["dev"].c_str()));
                     m_listenList.erase(i++);
                 }
             } else if (!i->endpointStarted) {
                 checkEvents.push_back(new Event(i->listenFd, Event::IO_READ, false));
-                QCC_DbgPrintf(("Adding checkevent %s to list of events", i->args["dev"].c_str()));
+                QCC_DbgPrintf(("DaemonSLAPTransport::Run(): Adding checkevent for %s to list of events", i->args["dev"].c_str()));
             }
         }
 
@@ -685,17 +686,17 @@ void* DaemonSLAPTransport::Run(void* arg)
                 continue;
             } else {
                 Event* e = *i;
-                QCC_DbgPrintf(("Event wait returned. serial event"));
+                QCC_DbgPrintf(("DaemonSLAPTransport::Run(): Accepting connection "));
                 for (list<ListenEntry>::iterator i = m_listenList.begin(); i != m_listenList.end(); i++) {
                     if (i->listenFd == e->GetFD()) {
                         i->endpointStarted = true;
                         static const bool truthiness = true;
                         DaemonSLAPTransport* ptr = this;
                         uint32_t packetSize = SLAP_DEFAULT_PACKET_SIZE;
-
-                        QCC_DbgPrintf(("Creating ep"));
+                        QCC_DbgPrintf(("DaemonSLAPTransport::Run(): Creating endpoint for %s",  i->args["dev"].c_str()));
                         DaemonSLAPEndpoint conn(ptr, m_bus, truthiness, "slap", i->listenFd, packetSize);
-                        QCC_DbgPrintf(("Created ep"));
+                        QCC_DbgPrintf(("DaemonSLAPTransport::Run(): Authenticating endpoint for %s",  i->args["dev"].c_str()));
+                        conn->Authenticate();
 
                         status = conn->Authenticate();
                         QCC_DbgPrintf(("called auhenticate"));
@@ -710,7 +711,7 @@ void* DaemonSLAPTransport::Run(void* arg)
         }
     }
     m_lock.Unlock(MUTEX_CONTEXT);
-
+    QCC_DbgPrintf(("DaemonSLAPTransport::Run() is exiting. status = %s", QCC_StatusText(status)));
     return (void*) status;
 }
 void DaemonSLAPTransport::Authenticated(DaemonSLAPEndpoint& conn)

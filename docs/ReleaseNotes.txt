@@ -1,4 +1,4 @@
-AllJoyn Version 3.3.2 Release Notes
+AllJoyn Version 3.4.0 Release Notes
 -----------------------------------
 
 Platform Support
@@ -12,60 +12,78 @@ Platform Support
 7) Windows 7 (32 and 64 bit x86)
 8) Windows 8 (32 and 64 bit x86)
 9) Windows RT (ARM)
-10) iOS 6
+10) iOS 7
 11) OSX 10.7 Lion
 12) OpenWRT (trunk)
-13) Arduino 
 
 
-Features added in Version 3.3.2
+Features added in Version 3.4.0
 -------------------------------
 
-None
+Added support for serial line transport for AllJoyn (SLAP transport)
 
-Issues Addressed in Version 3.3.2
+Added support for object level security (in addition to previously 
+supported interface level security)
+
+Added new API to report reason for LostSession
+
+Added new API to remove member from a multipoint session
+
+Upgraded IOS support from IOS6 to IOS7
+
+
+Issues Addressed in Version 3.4.0
 ---------------------------------
 
-ALLJOYN-1761: Java binding crash due to BusAttachm not garbage collected before
-VM exits
+ALLJOYN-2036: BusAttachment::Disconnect does not disconnect from daemon..
 
-ALLJOYN-1946: alljoyn-daemon crashes when invoked with verbosity=5 and if the 
-config file has <syslog/>
-
-ALLJOYN-1965: WinRT: MethodReply(msg, args) should support args == NULL
-
-ALLJOYN-1976: References to the ClientEndpoint are being held after the 
-BusAttachment is stopped and joined
-
-ALLJOYN-1982: Increase the maximum number of IODispatch threads to 128
-
-ALLJOYN-1988 Do not attempt to remove b2b endpoints from virtual endpoints
-they were never a part of. (affects sessionless signal delivery after many
-iterations).
-
-ALLJOYN-2004: Java binding Variant.getSignature needs to be public
-
-ALLJOYN-2019: Make the symbol file of AllJoyn.dll as part of debug build
-for Win8/RT
-
-ALLJOYN-2024: TRANSPORT_TCP not defined for Java Binding
-
-ALLJOYN-2078: Deadlock due to DoStopListen request when the TCPTransport 
-is being stopped and joined
-
-ALLJOYN-2010: Repeated join/leave session indicates possible memory leak 
-in Alljoyn About service cpp. 
-
-
-Known Issues
-------------
+ALLJOYN-2043: ProxyBusObject with Properties and one other interface
+is unusable if Properties::GetAll is called first
 
 ALLJOYN-2098: Rejected AllJoyn daemon connect attempts are not properly
 retried with backoff
 
 ALLJOYN-2100: Runtime failure using Java bindings with Java 7
 
-ALLJOYN-2138: Memory leak seen when running ConsumerService on Linux and CUS22
+ALLJOYN-2116: Memory leak seen when running SessionlessClient / SessionlessService
+
+ALLJOYN-2123: Memory leak seen when rapidly calling Advertise()/CancelAdvertise()
+and or FindName()/CancelFindName()
+
+ALLJOYN-2138/2191: Memory leak seen when running ConsumerService on Linux
+
+ALLJOYN-2178: Not all notifications are being recevied by notification consumer
+
+ALLJOYN-2339: Thin client discovery buffer too small
+
+ALLJOYN-2345: Inconsistencies between Java and CPP bindings related to security
+
+
+Known Issues
+------------
+
+ALLJOYN-1967: AllJoyn daemon cannot (quickly) detect disconnection of non-local
+client connection such as thin-client connection
+
+ALLJOYN-1973: AllJoyn does not support latest version of Android NDK. Last 
+officially supported version of NDK is 8C.
+
+ALLJOYN-2192: AllJoyn thin client does not support header compression.
+
+ALLJOYN-2349: PINX authentication does not work between nodes of different
+endianness
+
+ALLJOYN-2374: AllJoyn thin client binding cannot send/receive messages larger
+than 55KB
+
+ALLJOYN-VARIOUS: JavaScript and Win8/RT language bindings do not currently
+support the new object based security APIs. These include JavaScript, Win8/RT 
+
+ALLJOYN-VARIOUS: JavaScript, Win8/RT, C and Unity bindings do not currently 
+support new API changes to report reason for lost session
+
+ALLJOYN-VARIOUS: JavaScript, Win8/RT, C and Unity bindings do not currently 
+support new API changes to allow removal of member from multipoint session
 
 
 Compatibility
@@ -114,6 +132,9 @@ with a rule that matches the globally broadcast signals that the app wishes to r
 
 Change history
 --------------
+
+3.4.0 - Added support for Serial Line AllJoyn Protocol (SLAP) transport and
+        object level security.
 
 3.3.2 - Bug fixes.
 

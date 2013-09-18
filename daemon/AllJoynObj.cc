@@ -953,9 +953,6 @@ ThreadReturn STDCALL AllJoynObj::JoinSessionThread::RunJoin()
                     VirtualEndpoint vMemberEp = VirtualEndpoint::cast(memberEp);
                     /* Local session creator */
                     memberB2BEp = vMemberEp->GetBusToBusEndpoint(id);
-                    if (memberB2BEp->IsValid()) {
-                        b2bEp = memberB2BEp;
-                    }
                 } else {
                     /* Remote session creator */
                     memberB2BEp = b2bEp;

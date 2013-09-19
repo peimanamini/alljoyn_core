@@ -209,9 +209,15 @@ static void usage(void)
 /** Main entry point */
 int main(int argc, char** argv)
 {
+    const uint64_t startTime = GetTimestamp64(); // timestamp in milliseconds
     QStatus status = ER_OK;
     uint32_t transportOpts = 0;
 
+    // echo command line to provide distinguishing information within multipoint session
+    for (int i = 0; i < argc; i++) {
+        printf("%s ", argv[i]);
+    }
+    printf("\n");
     printf("AllJoyn Library version: %s\n", ajn::GetVersion());
     printf("AllJoyn Library build info: %s\n", ajn::GetBuildInfo());
 
@@ -339,6 +345,7 @@ int main(int argc, char** argv)
     }
 
     printf("\n %s exiting with status %d (%s)\n", argv[0], status, QCC_StatusText(status));
+    printf("Elapsed time is %ld seconds\n", (GetTimestamp64() - startTime) / 1000);
 
     return (int) status;
 }

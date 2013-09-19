@@ -710,24 +710,6 @@ void ICEStream::ProcessCheckEvent(ICECandidatePair& requestPair,
     {
         ICECandidatePair* validPair = &requestPair;
 
-        // Compare mapped address against known candidates.
-        // @@ JP
-#if 0
-        if (DiscoverPeerReflexive(mappedAddress, &requestPair, peerReflexiveCandidate)) {
-            // We found a new candidate...
-            // Section 7.1.2.2.2 draft-ietf-mmusic-ice-19
-            // Construct a Valid Pair and add to ValidList.
-            uint64_t pairPriority = session->ComputePairPriority(session->IsControllingAgent(),
-                                                                 peerReflexiveCandidate->GetPriority(),
-                                                                 requestPair.remote->GetPriority());
-            ICECandidatePair* peerPair = new ICECandidatePair(peerReflexiveCandidate, requestPair.remote, false, pairPriority);
-            peerPair->InitChecker(requestPair); // use same priority, etc. as original pair
-            //AddCandidatePair(peerPair);
-
-            // Replace the original request pair for updating
-            validPair = peerPair;
-        }
-#endif
         validPair->local->GetComponent()->AddToValidList(validPair);
 
         // Section 7.1.2.2.3 draft-ietf-mmusic-ice-19

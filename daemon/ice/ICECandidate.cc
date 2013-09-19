@@ -628,24 +628,6 @@ QStatus _ICECandidate::ReadReceivedMessage(uint32_t timeoutMsec)
         if (ER_OK == status &&
             checkStatus == ICECandidatePair::CheckResponseSent) {
 
-#if 0
-            // Section 7.2.1.3 draft-ietf-mmusic-ice-19
-            String uniqueFoundation;
-            ICECandidate remoteCandidate = component->GetICEStream()->MatchRemoteCandidate(remote, uniqueFoundation);
-            if (remoteCandidate->GetType() == _ICECandidate::Invalid_Candidate) {
-                _ICECandidate::ICECandidateType type = _ICECandidate::PeerReflexive_Candidate;
-                remoteCandidate = ICECandidate(type,
-                                               remote,
-                                               component,
-                                               transportProtocol,
-                                               requestPriority,
-                                               uniqueFoundation);
-
-                // Add remote peer-reflexive candidate to our list.
-                component->GetICEStream()->AddRemoteCandidate(remoteCandidate);
-            }
-#endif
-
             // Section 7.2.1.4 draft-ietf-mmusic-ice-19
             // 'Construct' a pair, meaning find a pair whose local candidate is equal to
             // the transport address on which the STUN request was received, and a
@@ -666,35 +648,7 @@ QStatus _ICECandidate::ReadReceivedMessage(uint32_t timeoutMsec)
                 }
             }
             if (!constructedPair) {
-                // @@ JP
-#if 0
-                /*
-                 * This code was originally intended to insert peer reflexive candidates, but it cannot work because
-                 * you cannot use a new ICECandidate without first calling ICECandidatePair::InitChecker.
-                 * For now, peer reflexive handling is disabled.
-                 */
-                // pair is not currently on check list
-                uint64_t pairPriority =
-                    component->GetICEStream()->GetSession()->ComputePairPriority(
-                        component->GetICEStream()->GetSession()->IsControllingAgent(),
-                        0,                         //ToDo constructedPair->local.GetPriority(),
-                        remoteCandidate->GetPriority());
-
-                ICECandidate local(this);
-                constructedPair = new ICECandidatePair(local, remoteCandidate, false, pairPriority);
-                // Insert into checkList based on priority.
-                component->GetICEStream()->AddCandidatePairByPriority(constructedPair);
-
-                constructedPair->AddTriggered();
-
-                QCC_DbgPrintf(("Added new pair local %s:%d remote %s:%d",
-                               constructedPair->local->GetEndpoint().addr.ToString().c_str(),
-                               constructedPair->local->GetEndpoint().port,
-                               constructedPair->remote->endPoint.addr.ToString().c_str(),
-                               constructedPair->remote->endPoint.port));
-#else
                 break;
-#endif
             } else {
                 // Pair is on check list
                 switch (constructedPair->state) {

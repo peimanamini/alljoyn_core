@@ -348,25 +348,6 @@ QStatus Stun::SendStunMessage(const StunMessage& msg, IPAddress addr, uint16_t p
         QCC_LogError(status, ("Sending STUN message"));
         frameLock.Unlock();
         goto exit;
-
-#if 0
-        ScatterGatherList txSG;
-        uint16_t frameLen;
-        uint8_t frameLenBuf[sizeof(frameLen)];
-
-        // Add framing for TCP connections not relayed via a TURN server.
-        if (!usingTurn) {
-            frameLen = msg.Size();
-            frameLenBuf[0] = static_cast<uint8_t>(frameLen >> 8);
-            frameLenBuf[1] = static_cast<uint8_t>(frameLen & 0xff);
-            txSG.AddBuffer(frameLenBuf, FRAMING_SIZE);
-        }
-        txSG.AddSG(msgSG);
-        status = SendSG(sockfd, txSG, sent);
-        if (!usingTurn) {
-            sent -= FRAMING_SIZE;
-        }
-#endif
     } else {
         if (relayMsg) {
             // Relayed UDP messages must be wrapped in a STUN message.

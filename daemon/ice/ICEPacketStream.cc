@@ -319,18 +319,6 @@ QStatus ICEPacketStream::PushPacketBytes(const void* buf, size_t numBytes, Packe
         sendLock.Unlock();
     }
 
-#if 0
-    printf("$$$$$$$$$$$ PushBytes(len=%d)", (int) numBytes);
-    for (size_t i = 0; i < numBytes; ++i) {
-        if ((i % 16) == 0) {
-            printf("\n");
-        }
-        uint8_t upper = *(((const uint8_t*)buf) + i) >> 4;
-        uint8_t lower = *(((const uint8_t*)buf) + i) & 0x0F;
-        printf("%c%c ", (upper > 9) ? upper + 'A' - 10 : upper + '0', (lower > 9) ? lower + 'A' - 10 : lower + '0');
-    }
-    printf("\n");
-#endif
     return status;
 }
 
@@ -365,18 +353,6 @@ QStatus ICEPacketStream::PullPacketBytes(void* buf, size_t reqBytes, size_t& act
         QCC_LogError(status, ("recvfrom failed: %s", ::strerror(errno)));
     }
 
-#if 0
-    printf("$$$$$$$$$$$ PullBytes(len=%d, buf=%p)\n", (int) actualBytes, buf);
-    for (size_t i = 0; i < actualBytes; ++i) {
-        if ((i % 16) == 0) {
-            printf("\n");
-        }
-        uint8_t upper = *(((const uint8_t*)buf) + i) >> 4;
-        uint8_t lower = *(((const uint8_t*)buf) + i) & 0x0F;
-        printf("%c%c ", (upper > 9) ? upper + 'A' - 10 : upper + '0', (lower > 9) ? lower + 'A' - 10 : lower + '0');
-    }
-    printf("\n");
-#endif
     QCC_DbgTrace(("ICEPacketStream::PullPacketBytes Done actualBytes=%d", actualBytes));
     return status;
 }

@@ -9,6 +9,288 @@ Each Status, Method, or class will be marked as follows:
 
 Each addition should contain a short explanation of what added or changed.
 For more information please refer to the API documentation.
+-------------------------------------------------------------------------------
+AllJoyn API Changes between v3.3.2 and v3.4.0 (Java API)
+NEW STATUS
+ER_IODISPATCH_STOPPING value = 0x1023
+    Cannot execute a read or write command on an IODispatch thread because it is
+    stopping.
+
+NEW STATUS
+ER_SLAP_INVALID_PACKET_LEN value = 0x1024
+    Length of SLAP packet is invalid.
+
+NEW STATUS
+ER_SLAP_HDR_CHECKSUM_ERROR value = 0x1025
+    SLAP packet header checksum error.
+
+NEW STATUS
+ER_SLAP_INVALID_PACKET_TYPE value = 0x1026
+    Invalid SLAP packet type.
+
+NEW STATUS
+ER_SLAP_LEN_MISMATCH value = 0x1027
+    Calculated length does not match the received length.
+
+NEW STATUS
+ER_SLAP_PACKET_TYPE_MISMATCH value = 0x1028
+    Packet type does not match reliability bit.
+
+NEW STATUS
+ER_SLAP_CRC_ERROR value = 0x1029
+    SLAP packet CRC error.
+
+NEW STATUS
+ER_SLAP_ERROR value = 0x102A
+    Generic SLAP error.
+
+NEW STATUS
+ER_SLAP_OTHER_END_CLOSED value = 0x102B
+    Other end closed the SLAP connection
+
+NEW STATUS
+ER_ALLJOYN_REMOVESESSIONMEMBER_REPLY_NO_SESSION = 0x90ef
+    RemoveSessionMember reply: Specified session Id with this endpoint was not
+    found
+
+NEW STATUS
+ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_BINDER = 0x90f0
+    RemoveSessionMember reply: Endpoint is not the binder of session
+
+NEW STATUS
+ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_MULTIPOINT = 0x90f1
+    RemoveSessionMember reply: Session is not multipoint
+
+NEW STATUS
+ER_ALLJOYN_REMOVESESSIONMEMBER_NOT_FOUND = 0x90f2
+    RemoveSessionMember reply: Specified session member was not found
+
+NEW STATUS
+ER_ALLJOYN_REMOVESESSIONMEMBER_INCOMPATIBLE_REMOTE_DAEMON = 0x90f3
+    RemoveSessionMember reply: The remote daemon does not support this feature
+
+NEW STATUS
+ER_ALLJOYN_REMOVESESSIONMEMBER_REPLY_FAILED = 0x90f4
+    RemoveSessionMember reply: Failed for unspecified reason
+
+NEW STATUS
+ER_BUS_REMOVED_BY_BINDER = 0x90f5
+    The session member was removed by the binder
+
+NEW METHOD
+BusAttachment.removeSessionMember(int sessionId, String sessionMemberName)
+    Remove a session member from an existing multipoint session.
+
+    This method is a shortcut/helper that issues an
+    org.alljoyn.Bus.RemoveSessionMember method call to the local daemon
+    and interprets the response.
+
+    [param] sessionId - Session id.
+    [param] sessionMemberName - Name of member to remove from session.
+
+NEW METHOD
+BusAttachment.registerBusObject(BusObject busObj, String objPath, boolean secure)
+    Registers a bus object.
+
+    Once registered, the bus object may communicate to and from other
+    objects via its implemented bus interfaces.
+
+    The same object may not be registered on multiple bus connections.
+    [param] busObj - the BusObject to register
+    [param] objPath - the object path of the BusObject
+    [param] secure - true if authentication is required to access this object
+
+NEW METHOD
+BusAttachment.isBusObjectSecure(BusObject busObj)
+    Indicates if the BusObject is secure.
+
+NEW METHOD
+BusAttachment.getProxyBusObject(String busName,
+                                String objPath,
+                                int sessionId,
+                                Class[] busInterfaces,
+                                boolean secure)
+    Creates a proxy bus object for a remote bus object.
+    Methods on the remote object can be invoked through the proxy object.
+
+    There is no guarantee that the remote object referred to by the proxy
+    acutally exists.  If the remote object does not exist, proxy method calls
+    will fail.
+
+    Java proxy classes do not allow methods from two different interfaces to
+    have the same name and calling parameters. If two AllJoyn methods from two
+    different interfaces are implemented by the same remote object, one (or
+    both) of the method names must be modified. You may then use an annotation
+    for the renamed method to cause AllJoyn to use the originally expected
+    method name in any "wire" operations.
+
+    [param] busName - the remote endpoint name (well-known or unique)
+    [param] objPath - the absolute (non-relative) object path for the object
+    [param] sessionId - the session corresponding to the connection to the the
+                        object
+    [param] busInterfaces - an array of BusInterfaces that this proxy should
+                            respond to
+    [param] secure - the security mode for the remote object
+
+NEW CONSTRUCT
+ErrorReplyBusException(String name)
+    Constructs an ErrorReplyBusException with an error name and message from
+    a status code.
+
+    [param] status - the status code for the error
+
+NEW METHOD
+ErrorReplyBusException.getErrorStatus()
+   Gets the error status.
+
+NEW CONSTANT
+InterfaceDescription.AJ_IFC_SECURITY_INHERIT value = 0
+    Inherit the security of the object that implements the interface
+
+NEW CONSTANT
+InterfaceDescription.AJ_IFC_SECURITY_REQUIRED value = 1
+    Security is required for an interface
+
+NEW CONSTANT
+InterfaceDescription.AJ_IFC_SECURITY_OFF value = 2
+    Security does not apply to this interface
+
+NEW CONSTRUCTOR
+ProxyBusObject(BusAttachment busAttachment, String busName, String objPath,
+               int sessionId, Class[] busInterfaces, boolean secure)
+    Construct a ProxyBusObject.
+
+    [param] busAttachment - The connection the remote object is on.
+    [param] busName - Well-known or unique bus name of remote object.
+    [param] objPath - Object path of remote object.
+    [param] sessionId - The session ID corresponding to the connection to the object.
+    [param] busInterfaces - A list of BusInterfaces that this proxy should respond to.
+    [param] secure - the security mode for the remote object
+
+NEW METHOD
+ProxyBusObject.isSecure()
+    Indicates if the remote object for this proxy bus object is secure.
+
+NEW METHOD
+ProxyBusObject.getProperty(Class<T> iface, String propertyName)
+    Get a property from an interface on the remote object.
+
+    throws BusException if the named property doesn't exist
+
+    [param] iface the interface that the property exists on
+    [param] propertyName the name of the property
+
+NEW METHOD
+ProxyBusObject.setProperty(Class<T> iface, String propertyName, Variant value)
+    Set a property on an interface on the remote object.
+
+    throws BusException if the named property doesn't exist or cannot be set
+
+    [param] iface - the interface that the property exists on
+    [param] propertyName - the name of the property
+    [param] value - the value for the property
+
+NEW METHOD
+ProxyBusObject.getAllProperties(Class<T> iface) throws BusException
+    Get all properties from an interface on the remote object.
+
+    throws BusException if request cannot be honored
+
+    [param] iface - the interface
+
+NEW CONSTANT
+SessionListener.ALLJOYN_SESSIONLOST_INVALID value = 0x00
+    Invalid SessionLost code.
+
+NEW CONSTANT
+SessionListener.ALLJOYN_SESSIONLOST_REMOTE_END_LEFT_SESSION value = 0x01
+    Remote end called LeaveSession.
+
+NEW CONSTANT
+SessionListener.ALLJOYN_SESSIONLOST_REMOTE_END_CLOSED_ABRUPTLY value = 0x02
+    Remote end closed abruptly.
+
+NEW CONSTANT
+SessionListener.ALLJOYN_SESSIONLOST_REMOVED_BY_BINDER value = 0x03
+    Session binder removed this endpoint by calling RemoveSessionMember.
+
+NEW CONSTANT
+SessionListener.ALLJOYN_SESSIONLOST_LINK_TIMEOUT value = 0x04
+    Link was timed-out.
+
+NEW CONSTANT
+SessionListener.ALLJOYN_SESSIONLOST_REASON_OTHER value = 0x05
+    Unspecified reason for session loss.
+
+DEPRECATED METHOD
+SessionListener.sessionLost(int sessionId)
+    Called by the bus when a session becomes disconnected.
+
+    Any implementation of this function must be multithread safe.  See the
+    class documentation for details.
+
+    [param] sessionId - Id of session that was lost.
+
+NEW METHOD
+SessionListener.sessionLost(int sessionId, int reason)
+    Called by the bus when a session becomes disconnected.
+
+    Any implementation of this function must be multithread safe.  See the
+    class documentation for details.
+
+    [param] sessionId - Id of session that was lost.
+    [param] reason - Reason for the session being lost. One of:
+                     ALLJOYN_SESSIONLOST_REMOTE_END_LEFT_SESSION
+                     ALLJOYN_SESSIONLOST_REMOTE_END_CLOSED_ABRUPTLY
+                     ALLJOYN_SESSIONLOST_REMOVED_BY_BINDER
+                     ALLJOYN_SESSIONLOST_LINK_TIMEOUT
+                     ALLJOYN_SESSIONLOST_REASON_OTHER
+
+NEW SECURITY ANNOTATON
+@Secure(value="required")
+    Indicates that a given interface is secured by an authentication mechanism.
+
+    Valid value declarations are:
+      - required (default value) interface methods on the interface can only be
+                 called by an authenticated peer
+      - off if security is off interface authentication is never required
+            even when implemented by a secure object.
+      - inherit if the Secure annotation is omitted the interface will use a
+                security of inherit.  If security is inherit or security is not
+                specified for an interface the interface inherits the security
+                of the objects that implements the interface.
+    if an unknown value is given inherit will be used
+
+NEW SECURITY ANNOTATON
+@Secure(value="required")
+    Indicates that a given interface is secured by an authentication mechanism.
+
+    Valid value declarations are:
+      - required (default value) interface methods on the interface can only be
+                 called by an authenticated peer
+      - off if security is off interface authentication is never required
+            even when implemented by a secure object.
+      - inherit if the Secure annotation is omitted the interface will use a
+                security of inherit.  If security is inherit or security is not
+                specified for an interface the interface inherits the security
+                of the objects that implements the interface.
+    if an unknown value is given inherit will be used
+
+NEW SECURITY ANNOTATON
+@Secure(value="off")
+    Indicates that a given interface is secured by an authentication mechanism.
+
+    Valid value declarations are:
+      - required (default value) interface methods on the interface can only be
+                 called by an authenticated peer
+      - off if security is off interface authentication is never required
+            even when implemented by a secure object.
+      - inherit if the Secure annotation is omitted the interface will use a
+                security of inherit.  If security is inherit or security is not
+                specified for an interface the interface inherits the security
+                of the objects that implements the interface.
+    if an unknown value is given inherit will be used
+
 
 -------------------------------------------------------------------------------
 AllJoyn API Changes between v3.3.0 and v3.3.2 (Java API)

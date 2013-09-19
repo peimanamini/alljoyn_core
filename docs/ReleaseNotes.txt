@@ -54,7 +54,12 @@ ALLJOYN-2138/2191: Memory leak seen when running ConsumerService on Linux
 
 ALLJOYN-2178: Not all notifications are being recevied by notification consumer
 
+ALLJOYN-2206: Sessionless signals occasionally received more than once
+
 ALLJOYN-2339: Thin client discovery buffer too small
+
+ALLJOYN-2340: local bbclient fails to join multipoint session after two
+remote clients join
 
 ALLJOYN-2345: Inconsistencies between Java and CPP bindings related to security
 
@@ -68,7 +73,7 @@ client connection such as thin-client connection
 ALLJOYN-1973: AllJoyn does not support latest version of Android NDK. Last 
 officially supported version of NDK is 8C.
 
-ALLJOYN-2192: AllJoyn thin client does not support header compression.
+ALLJOYN-2192: AllJoyn thin client does not support header compression
 
 ALLJOYN-2349: PINX authentication does not work between nodes of different
 endianness
@@ -128,6 +133,11 @@ no longer implicitly adds a match rule that allows all globally broadcast signal
 the given interface to be received. Beginning with version 3.3.0 of the Java binding,
 the application developer is responsible for explicitly calling BusAttachment.AddMatch
 with a rule that matches the globally broadcast signals that the app wishes to receive.
+
+Starting with version 3.4.0 the AllJoyn daemon and sample programs use a common
+shared library called liballjoyn.so on Linux and OpenWrt. In order to run these programs, you will need to set the LD_LIBRARY_PATH environment variable to include the directory where liballjoyn.so is located.
+
+Version 3.4 of the AllJoyn ICE transport changed the hostname for the Rendezvous server from rdvz.alljoyn.org to connect.alljoyn.org. As a result, pre-3.4 versions of AllJoyn cannot discover or connect using the ICE transport.
 
 
 Change history

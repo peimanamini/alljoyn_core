@@ -24,7 +24,7 @@ java/   optional Java language binding          (built from alljoyn_java)
 c/      optional ANSI C language binding        (built from alljoyn_c)
           - required by Unity binding
 unity/  optional Unity language binding         (built from alljoyn_unity)
-about/  implements AllJoyn About Service. (built from about.git/(cpp and java))
+about/  implements AllJoyn About Feature. (built from about.git/(cpp and java))
 
 
 The contents of each top level folder are further arranged into sub-folders:
@@ -102,7 +102,7 @@ unity/  Unity binding
 
 
         ---------------------
-about/  AllJoyn About Service
+about/  AllJoyn About Feature
         ---------------------
 
     jar/

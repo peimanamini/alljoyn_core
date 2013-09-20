@@ -70,6 +70,9 @@ officially supported version of NDK is 8C.
 
 ALLJOYN-2192: AllJoyn thin client does not support header compression.
 
+ALLJOYN-2340: local bbclient fails to join multipoint session after two
+remote clients join
+
 ALLJOYN-2349: PINX authentication does not work between nodes of different
 endianness
 

@@ -696,7 +696,6 @@ void* DaemonSLAPTransport::Run(void* arg)
                         QCC_DbgPrintf(("DaemonSLAPTransport::Run(): Creating endpoint for %s",  i->args["dev"].c_str()));
                         DaemonSLAPEndpoint conn(ptr, m_bus, truthiness, "slap", i->listenFd, packetSize);
                         QCC_DbgPrintf(("DaemonSLAPTransport::Run(): Authenticating endpoint for %s",  i->args["dev"].c_str()));
-                        conn->Authenticate();
 
                         status = conn->Authenticate();
                         QCC_DbgPrintf(("called auhenticate"));

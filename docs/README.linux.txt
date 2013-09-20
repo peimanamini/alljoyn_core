@@ -22,7 +22,7 @@ cpp/    core AllJoyn functionality, implemented in C++
 java/   optional Java language binding          (built from alljoyn_java)
 js/     optional Javascript binding             (built from alljoyn_js)
 c/      optional ANSI C language binding        (built from alljoyn_c)
-about/  implements AllJoyn About Service. (built from about.git/(cpp and java))
+about/  implements AllJoyn About Feature. (built from about.git/(cpp and java))
 
 
 The contents of each top level folder are further arranged into sub-folders:
@@ -95,7 +95,7 @@ c/      ANSI C language binding
 
 
         ---------------------
-about/  AllJoyn About Service
+about/  AllJoyn About Feature
         ---------------------
 
     bin/                        pre-built sample apps

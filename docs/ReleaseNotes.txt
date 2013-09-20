@@ -126,12 +126,21 @@ applications. This issue was addressed in version 3.0.1.
 Version 3.3.0 is the first version of the AllJoyn daemon that is compatible with
 AllJoyn thin client usage. Older daemons cannot be used with AllJoyn thin-clients.
 
-Starting with version 3.3.0, the AllJoyn Java binding call BusAttachement.registerSignalHandler()
-no longer implicitly adds a match rule that allows all globally broadcast signals of
-the given interface to be received. Beginning with version 3.3.0 of the Java binding,
-the application developer is responsible for explicitly calling BusAttachment.AddMatch
-with a rule that matches the globally broadcast signals that the app wishes to receive.
+Starting with version 3.3.0, the AllJoyn Java binding call
+BusAttachement.registerSignalHandler() no longer implicitly adds a match rule
+that allows all globally broadcast signals of the given interface to be received.
+Beginning with version 3.3.0 of the Java binding, the application developer is
+responsible for explicitly calling BusAttachment.AddMatch with a rule that
+matches the globally broadcast signals that the app wishes to receive.
 
+Starting with version 3.4.0 the AllJoyn daemon and sample programs use a common
+shared library called liballjoyn.so on Linux and OpenWrt. In order to run these
+programs, you will need to set the LD_LIBRARY_PATH environment variable to
+include the directory where liballjoyn.so is located.
+
+Version 3.4 of the AllJoyn ICE transport changed the hostname for the Rendezvous
+server from rdvz.alljoyn.org to connect.alljoyn.org. As a result, pre-3.4 versions
+of AllJoyn cannot discover or connect using the ICE transport.
 
 Change history
 --------------

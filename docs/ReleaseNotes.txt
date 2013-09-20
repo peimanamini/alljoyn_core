@@ -58,9 +58,6 @@ ALLJOYN-2206: Sessionless signals occasionally received more than once
 
 ALLJOYN-2339: Thin client discovery buffer too small
 
-ALLJOYN-2340: local bbclient fails to join multipoint session after two
-remote clients join
-
 ALLJOYN-2345: Inconsistencies between Java and CPP bindings related to security
 
 
@@ -74,6 +71,9 @@ ALLJOYN-1973: AllJoyn does not support latest version of Android NDK. Last
 officially supported version of NDK is 8C.
 
 ALLJOYN-2192: AllJoyn thin client does not support header compression
+
+ALLJOYN-2340: local bbclient fails to join multipoint session after two
+remote clients join
 
 ALLJOYN-2349: PINX authentication does not work between nodes of different
 endianness

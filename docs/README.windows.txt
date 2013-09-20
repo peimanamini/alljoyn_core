@@ -4,7 +4,7 @@ AllJoyn SDK for Windows 7
 
 This subtree contains one complete copy of the AllJoyn SDK for Windows 7, built
 for a single CPU type (either x86 or x86_64), VARIANT (either debug or release),
-and for a single version of Microsoft Visual Studio (either 2008 or 2010).
+and for a single version of Microsoft Visual Studio (either 2010 or 2012).
 
 The CPU, VARIANT, and MSVS version is normally incorporated into the name of the
 package or folder containing this SDK.
@@ -48,7 +48,13 @@ cpp/    core AllJoyn functionality, implemented in C++
         ----------------------------------------------
 
     bin/                        executable binaries
-    bin/samples/
+                                  - as of 3.4.0, several test programs are
+                                    intentionally removed from published SDK's
+
+    bin/samples/                pre-built sample programs
+
+        SampleDaemon                    Easy-to-use daemon for use with
+                                        AllJoyn Thin Client
 
     docs/html/                  AllJoyn Core API documentation
 

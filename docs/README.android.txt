@@ -24,6 +24,7 @@ java/   optional Java language binding          (built from alljoyn_java)
 c/      optional ANSI C language binding        (built from alljoyn_c)
           - required by Unity binding
 unity/  optional Unity language binding         (built from alljoyn_unity)
+about/  implements AllJoyn About Service. (built from about.git/(cpp and java))
 
 
 The contents of each top level folder are further arranged into sub-folders:
@@ -36,6 +37,8 @@ cpp/    core AllJoyn functionality, implemented in C++
                                   - not intended for AllJoyn app development
 
     bin/                        executable binaries
+                                  - as of 3.4.0, several test programs are
+                                    intentionally removed from published SDK's
 
         alljoyn-daemon                  installable AllJoyn daemon, for OEMs
                                           - or devices with super-user access
@@ -96,3 +99,12 @@ unity/  Unity binding
     package_support/            permits re-building the Unity package
 
     samples/                    sample apps for Android
+
+
+        ---------------------
+about/  AllJoyn About Service
+        ---------------------
+
+    jar/
+        alljoyn_about.jar               AllJoyn About Java API
+

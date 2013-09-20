@@ -22,6 +22,7 @@ cpp/    core AllJoyn functionality, implemented in C++
 java/   optional Java language binding          (built from alljoyn_java)
 js/     optional Javascript binding             (built from alljoyn_js)
 c/      optional ANSI C language binding        (built from alljoyn_c)
+about/  implements AllJoyn About Service. (built from about.git/(cpp and java))
 
 
 The contents of each top level folder are further arranged into sub-folders:
@@ -36,6 +37,9 @@ cpp/    core AllJoyn functionality, implemented in C++
 
     bin/samples/                pre-built sample programs
 
+        SampleDaemon                    Easy-to-use daemon for use with
+                                        AllJoyn Thin Client
+
     docs/html/                  AllJoyn Core API documentation
 
     inc/alljoyn/                AllJoyn Core (C++) headers
@@ -44,6 +48,8 @@ cpp/    core AllJoyn functionality, implemented in C++
     lib/                        AllJoyn Core (C++) client libraries
 
         liballjoyn.a                    implements core API
+        liballjoyn.so                   requires LD_LIBRARY_PATH=/path/to/lib/folder
+
         libajdaemon.a                   implements bundled-daemon
         BundledDaemon.o
 
@@ -86,3 +92,21 @@ c/      ANSI C language binding
     inc/qcc/
 
     lib/                        client libraries
+
+
+        ---------------------
+about/  AllJoyn About Service
+        ---------------------
+
+    bin/                        pre-built sample apps
+
+    jar/                        client library, misc jar files
+
+        alljoyn_about.jar               About Java API
+
+    inc/alljoyn/about                   About C++ headers
+
+    lib/                                About C++ client libraries
+
+        liballjoyn_about.a
+        liballjoyn_about.so

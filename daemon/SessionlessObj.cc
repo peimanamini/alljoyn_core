@@ -710,7 +710,7 @@ void SessionlessObj::HandleRangeRequest(const char* sender, SessionId sessionId,
             MessageMapKey key = it->first;
             if (it->second.second->IsExpired()) {
                 /* Remove expired message without sending */
-                messageMap.erase(++it);
+                messageMap.erase(it++);
                 messageErased = true;
             } else {
                 /* Send message */

@@ -811,11 +811,14 @@ void SessionlessObj::AlarmTriggered(const Alarm& alarm, QStatus reason)
                 if (status != ER_OK) {
                     QCC_LogError(status, ("Failed to request/advertise \"%s\"", lastAdvName.c_str()));
                     lastAdvName.clear();
+                    lastAdvChangeId = -1;
+                } else {
+                    lastAdvChangeId = maxChangeId;
                 }
-                lastAdvChangeId = maxChangeId;
             } else {
                 /* Map is empty. No advertisment. */
                 lastAdvName.clear();
+                lastAdvChangeId = -1;
             }
         }
 

@@ -375,6 +375,12 @@ class _RemoteEndpoint : public _BusEndpoint, public qcc::ThreadListener, public 
      */
     void SetSessionId(uint32_t sessionId);
 
+    /**
+     * Return true iff this endpoint has received messages over a
+     * user-defined session.
+     */
+    bool GetHasRxSessionMessage();
+
   protected:
 
     /**
@@ -461,3 +467,4 @@ class _RemoteEndpoint : public _BusEndpoint, public qcc::ThreadListener, public 
 }
 
 #endif
+

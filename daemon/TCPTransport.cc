@@ -505,6 +505,9 @@ class _TCPEndpoint : public _RemoteEndpoint {
 
     void SetAuthDone(void)
     {
+        Timespec tNow;
+        GetTimeNow(&tNow);
+        SetStartTime(tNow);
         m_authState = AUTH_DONE;
     }
 
@@ -1443,6 +1446,22 @@ void TCPTransport::ManageEndpoints(Timespec tTimeout)
             m_endpointListLock.Lock(MUTEX_CONTEXT);
             i = m_endpointList.upper_bound(ep);
             continue;
+        }
+        /*
+         * Passive endpoints need to be monitored between the time the endpoint is created via listen/accept
+         * up until responsibility for  lifecycle of the endpoint can be transferred to the session management
+         * code in AllJoynObj. Otherwise, an endpoint can exist indefinitely if no session related control
+         * messages are received over the new endpoint.
+         */
+        if (authState == _TCPEndpoint::AUTH_DONE) {
+
+            Timespec tNow;
+            GetTimeNow(&tNow);
+            if (!ep->GetHasRxSessionMessage() && (ep->GetStartTime() + tTimeout < tNow)) {
+                /* This is a connection that timedout waiting for routing to be set up. Kill it */
+                QCC_DbgHLPrintf(("TCPTransport:: Stopping endpoint that timedout waiting for routing to be set up %s.\n", ep->GetUniqueName().c_str()));
+                ep->Stop();
+            }
         }
 
         /*

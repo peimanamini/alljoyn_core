@@ -915,4 +915,13 @@ uint32_t _RemoteEndpoint::GetSessionId() {
     }
 }
 
+bool _RemoteEndpoint::GetHasRxSessionMessage()
+{
+    if (internal) {
+        return internal->hasRxSessionMsg;
+    } else {
+        return false;
+    }
+}
+
 }

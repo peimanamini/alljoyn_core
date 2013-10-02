@@ -69,12 +69,12 @@ class _DaemonSLAPEndpoint : public _RemoteEndpoint {
         AUTH_DONE,           /**< The auth thread has been successfully shut down and joined */
     };
 
-    _DaemonSLAPEndpoint(DaemonSLAPTransport* transport, BusAttachment& bus, bool incoming, const qcc::String connectSpec, UARTFd fd, uint32_t packetSize) :
+    _DaemonSLAPEndpoint(DaemonSLAPTransport* transport, BusAttachment& bus, bool incoming, const qcc::String connectSpec, UARTFd fd, uint32_t packetSize, uint32_t baudrate) :
         _RemoteEndpoint(bus, incoming, connectSpec, &m_stream, DaemonSLAPTransport::TransportName),
         m_transport(transport), m_authThread(this), m_fd(fd), m_authState(AUTH_INITIALIZED), m_epState(EP_INITIALIZED),
         m_timer("SLAPEp", true, 1, false, 10),
         m_rawStream(fd),
-        m_stream(&m_rawStream, m_timer, packetSize, 4),
+        m_stream(&m_rawStream, m_timer, packetSize, 4, baudrate),
         m_uartController(&m_rawStream, bus.GetInternal().GetIODispatch(), &m_stream)
     {
     }
@@ -693,12 +693,12 @@ void* DaemonSLAPTransport::Run(void* arg)
                         static const bool truthiness = true;
                         DaemonSLAPTransport* ptr = this;
                         uint32_t packetSize = SLAP_DEFAULT_PACKET_SIZE;
+                        uint32_t baudrate = StringToU32(i->args["baud"]);
                         QCC_DbgPrintf(("DaemonSLAPTransport::Run(): Creating endpoint for %s",  i->args["dev"].c_str()));
-                        DaemonSLAPEndpoint conn(ptr, m_bus, truthiness, "slap", i->listenFd, packetSize);
+                        DaemonSLAPEndpoint conn(ptr, m_bus, truthiness, "slap", i->listenFd, packetSize, baudrate);
                         QCC_DbgPrintf(("DaemonSLAPTransport::Run(): Authenticating endpoint for %s",  i->args["dev"].c_str()));
 
                         status = conn->Authenticate();
-                        QCC_DbgPrintf(("called auhenticate"));
                         if (status == ER_OK) {
                             m_authList.insert(conn);
                         }

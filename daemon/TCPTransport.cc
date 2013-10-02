@@ -1457,7 +1457,7 @@ void TCPTransport::ManageEndpoints(Timespec tTimeout)
 
             Timespec tNow;
             GetTimeNow(&tNow);
-            if (!ep->GetHasRxSessionMessage() && (ep->GetStartTime() + tTimeout < tNow)) {
+            if ((ep->GetFeatures().isBusToBus && !ep->IsSessionRouteSetUp()) && (ep->GetStartTime() + tTimeout < tNow)) {
                 /* This is a connection that timedout waiting for routing to be set up. Kill it */
                 QCC_DbgHLPrintf(("TCPTransport:: Stopping endpoint that timedout waiting for routing to be set up %s.\n", ep->GetUniqueName().c_str()));
                 ep->Stop();

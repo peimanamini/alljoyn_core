@@ -376,10 +376,9 @@ class _RemoteEndpoint : public _BusEndpoint, public qcc::ThreadListener, public 
     void SetSessionId(uint32_t sessionId);
 
     /**
-     * Return true iff this endpoint has received messages over a
-     * user-defined session.
+     * Return true iff a session route has been set up for this b2b ep.
      */
-    bool GetHasRxSessionMessage();
+    bool IsSessionRouteSetUp();
 
   protected:
 

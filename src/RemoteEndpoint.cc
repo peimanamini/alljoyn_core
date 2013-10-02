@@ -915,10 +915,10 @@ uint32_t _RemoteEndpoint::GetSessionId() {
     }
 }
 
-bool _RemoteEndpoint::GetHasRxSessionMessage()
+bool _RemoteEndpoint::IsSessionRouteSetUp()
 {
     if (internal) {
-        return internal->hasRxSessionMsg;
+        return (internal->sessionId != 0);
     } else {
         return false;
     }

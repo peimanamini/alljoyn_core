@@ -26,20 +26,10 @@ installedDocs = None
 
 # Build docs
 if docenv['DOCS'] == 'html':
-    # the target directory 'docs/tmp' is never built this will cause doxygen 
-    # to run every time DOCS == 'html'
-    generateDocs = docenv.Doxygen(source='Doxygen_html', target=[Dir('tmp'), Dir('html')])
-    installedDocs = docenv.Install('$CPP_DISTDIR/docs', Dir('html'))
-    docenv.Clean('Doxygen_html', Dir('html'))
-    docenv.Depends(installedDocs, generateDocs)
+    installedDocs = docenv.Doxygen(source='Doxygen_html')
 
 elif docenv['DOCS'] == 'dev':
-    # the target directory 'docs/tmp' is never built this will cause doxygen 
-    # to run every time DOCS == 'html'
-    generateDocs = docenv.Doxygen(source='Doxygen_dev', target=[Dir('tmp'), Dir('html')])
-    installedDocs = docenv.Install('$CPP_DISTDIR/docs', Dir('html'))
-    docenv.Clean('Doxygen_html', Dir('html'))
-    docenv.Depends(installedDocs, generateDocs)
+    installedDocs = docenv.Doxygen(source='Doxygen_dev')
 
 elif docenv['DOCS'] == 'pdf':
     # the target directory 'docs/tmp' is never built this will cause doxygen 

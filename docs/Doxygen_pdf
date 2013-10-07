@@ -1025,12 +1025,30 @@ PAPER_TYPE             = a4wide
 
 EXTRA_PACKAGES         = quic
 
+
 # The LATEX_HEADER tag can be used to specify a personal LaTeX header for
 # the generated latex document. The header should contain everything until
 # the first chapter. If it is left blank doxygen will generate a
 # standard header. Notice: only use this tag if you know what you are doing!
 
 LATEX_HEADER           =
+
+# The LATEX_FOOTER tag can be used to specify a personal $\mbox{\LaTeX}$ footer
+# for the generated $\mbox{\LaTeX}$ document. The footer should contain
+# everything after the last chapter. If it is left blank doxygen will generate a
+# standard footer.
+# Note: Only use a user-defined footer if you know what you are doing!
+# This tag requires that the tag GENERATE_LATEX is set to YES.
+
+LATEX_FOOTER           =
+
+# The LATEX_EXTRA_FILES tag can be used to specify one or more extra images or
+# other source files which should be copied to the LATEX_OUTPUT output
+# directory.  Note that the files will be copied as-is; there are no commands
+# or markers available.
+# This tag requires that the tag GENERATE_LATEX is set to YES.
+
+LATEX_EXTRA_FILES = quic.sty
 
 # If the PDF_HYPERLINKS tag is set to YES, the LaTeX that is generated
 # is prepared for conversion to pdf (using ps2pdf). The pdf file will

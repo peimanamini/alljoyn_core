@@ -2577,6 +2577,28 @@ QStatus TCPTransport::Connect(const char* connectSpec, const SessionOpts& opts, 
 {
     QCC_DbgHLPrintf(("TCPTransport::Connect(): %s", connectSpec));
 
+    /*
+     * We need to find the defaults for our connection limits.  These limits
+     * can be specified in the configuration database with corresponding limits
+     * used for DBus.  If any of those are present, we use them, otherwise we
+     * provide some hopefully reasonable defaults.
+     */
+    DaemonConfig* config = DaemonConfig::Access();
+
+    /*
+     * maxAuth is the maximum number of incoming connections that can be in
+     * the process of authenticating.  If starting to authenticate a new
+     * connection would mean exceeding this number, we drop the new connection.
+     */
+    uint32_t maxAuth = config->Get("limit@max_incomplete_connections", ALLJOYN_MAX_INCOMPLETE_CONNECTIONS_TCP_DEFAULT);
+
+    /*
+     * maxConn is the maximum number of active connections possible over the
+     * TCP transport.  If starting to process a new connection would mean
+     * exceeding this number, we drop the new connection.
+     */
+    uint32_t maxConn = config->Get("limit@max_completed_connections", ALLJOYN_MAX_COMPLETED_CONNECTIONS_TCP_DEFAULT);
+
     QStatus status;
     bool isConnected = false;
 
@@ -2842,39 +2864,55 @@ QStatus TCPTransport::Connect(const char* connectSpec, const SessionOpts& opts, 
          */
         DaemonRouter& router = reinterpret_cast<DaemonRouter&>(m_bus.GetInternal().GetRouter());
         AuthListener* authListener = router.GetBusController()->GetAuthListener();
+        m_endpointListLock.Lock();
+        QCC_DbgPrintf(("TCPTransport::Connect(): maxAuth == %d", maxAuth));
+        QCC_DbgPrintf(("TCPTransport::Connect(): maxConn == %d", maxConn));
+        QCC_DbgPrintf(("TCPTransport::Connect(): mAuthList.size() == %d", m_authList.size()));
+        QCC_DbgPrintf(("TCPTransport::Connect(): mEndpointList.size() == %d", m_endpointList.size()));
 
-        status = tcpEp->Establish("ANONYMOUS", authName, redirection, authListener);
+        if ((m_authList.size() < maxAuth) && (m_authList.size() + m_endpointList.size() < maxConn)) {
+            m_authList.insert(tcpEp);
+            status = ER_OK;
+        } else {
+            status = ER_AUTH_FAIL;
+            QCC_LogError(status, ("TCPTransport::Connect(): No slot for new connection"));
+        }
+        m_endpointListLock.Unlock();
         if (status == ER_OK) {
-            tcpEp->SetListener(this);
-            tcpEp->SetEpStarting();
-            status = tcpEp->Start();
+            status = tcpEp->Establish("ANONYMOUS", authName, redirection, authListener);
             if (status == ER_OK) {
-                tcpEp->SetEpStarted();
-                tcpEp->SetAuthDone();
+                tcpEp->SetListener(this);
+                tcpEp->SetEpStarting();
+                status = tcpEp->Start();
+                if (status == ER_OK) {
+                    tcpEp->SetEpStarted();
+                    tcpEp->SetAuthDone();
+                } else {
+                    tcpEp->SetEpFailed();
+                    tcpEp->SetAuthDone();
+                }
+            }
+            /*
+             * If we have a successful authentication, we pass the connection off to the
+             * server accept loop to manage.
+             */
+            if (status == ER_OK) {
+                m_endpointListLock.Lock(MUTEX_CONTEXT);
+                m_authList.erase(tcpEp);
+                m_endpointList.insert(tcpEp);
+                m_endpointListLock.Unlock(MUTEX_CONTEXT);
+                newEp = BusEndpoint::cast(tcpEp);
             } else {
-                tcpEp->SetEpFailed();
-                tcpEp->SetAuthDone();
+                QCC_LogError(status, ("TCPTransport::Connect(): Starting the TCPEndpoint failed"));
+                m_endpointListLock.Lock(MUTEX_CONTEXT);
+                m_authList.erase(tcpEp);
+                m_endpointListLock.Unlock(MUTEX_CONTEXT);
+                /*
+                 * Although the destructor of a remote endpoint includes a Stop and Join
+                 * call, there are no running threads since Start() failed.
+                 */
             }
         }
-
-        /*
-         * If we have a successful authentication, we pass the connection off to the
-         * server accept loop to manage.
-         */
-        if (status == ER_OK) {
-            m_endpointListLock.Lock(MUTEX_CONTEXT);
-            m_endpointList.insert(tcpEp);
-            m_endpointListLock.Unlock(MUTEX_CONTEXT);
-            newEp = BusEndpoint::cast(tcpEp);
-        } else {
-            QCC_LogError(status, ("TCPTransport::Connect(): Starting the TCPEndpoint failed"));
-
-            /*
-             * Although the destructor of a remote endpoint includes a Stop and Join
-             * call, there are no running threads since Start() failed.
-             */
-        }
-
         /*
          * In any case, we are done with blocking I/O on the current thread, so
          * we need to remove its pointer from the list we kept around to break it

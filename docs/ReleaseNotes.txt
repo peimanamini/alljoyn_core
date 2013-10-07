@@ -1,4 +1,4 @@
-AllJoyn Version 3.3.2 Release Notes
+AllJoyn Version 3.3.4 Release Notes
 -----------------------------------
 
 Platform Support
@@ -18,43 +18,17 @@ Platform Support
 13) Arduino 
 
 
-Features added in Version 3.3.2
+Features added in Version 3.3.4
 -------------------------------
 
 None
 
-Issues Addressed in Version 3.3.2
+
+Issues Addressed in Version 3.3.4
 ---------------------------------
 
-ALLJOYN-1761: Java binding crash due to BusAttachm not garbage collected before
-VM exits
-
-ALLJOYN-1946: alljoyn-daemon crashes when invoked with verbosity=5 and if the 
-config file has <syslog/>
-
-ALLJOYN-1965: WinRT: MethodReply(msg, args) should support args == NULL
-
-ALLJOYN-1976: References to the ClientEndpoint are being held after the 
-BusAttachment is stopped and joined
-
-ALLJOYN-1982: Increase the maximum number of IODispatch threads to 128
-
-ALLJOYN-1988 Do not attempt to remove b2b endpoints from virtual endpoints
-they were never a part of. (affects sessionless signal delivery after many
-iterations).
-
-ALLJOYN-2004: Java binding Variant.getSignature needs to be public
-
-ALLJOYN-2019: Make the symbol file of AllJoyn.dll as part of debug build
-for Win8/RT
-
-ALLJOYN-2024: TRANSPORT_TCP not defined for Java Binding
-
-ALLJOYN-2078: Deadlock due to DoStopListen request when the TCPTransport 
-is being stopped and joined
-
-ALLJOYN-2010: Repeated join/leave session indicates possible memory leak 
-in Alljoyn About service cpp. 
+ALLJOYN-2426: Endpoints that are not completely set up during a join session are
+not cleaned up. This causes further join sessions to fail.
 
 
 Known Issues
@@ -114,6 +88,8 @@ with a rule that matches the globally broadcast signals that the app wishes to r
 
 Change history
 --------------
+
+3.3.4 - Bug fixes.
 
 3.3.2 - Bug fixes.
 

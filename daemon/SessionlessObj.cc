@@ -826,7 +826,7 @@ void SessionlessObj::AlarmTriggered(const Alarm& alarm, QStatus reason)
         lock.Lock();
         map<String, ChangeIdEntry>::iterator cit = changeIdMap.begin();
         while (cit != changeIdMap.end()) {
-            if ((cit->second.nextJoinTimestamp <= qcc::GetTimestamp64()) && !cit->second.inProgress && (cit->second.changeId != cit->second.advChangeId)) {
+            if ((cit->second.nextJoinTimestamp <= qcc::GetTimestamp64()) && !cit->second.inProgress && ((cit->second.changeId != cit->second.advChangeId) || !cit->second.catchupList.empty())) {
                 if (cit->second.retries++ < MAX_JOINSESSION_RETRIES) {
                     SessionlessJoinContext* ctx = new SessionlessJoinContext(cit->second.advName, cit->second.advChangeId);
                     SessionOpts opts = sessionOpts;

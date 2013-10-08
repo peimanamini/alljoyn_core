@@ -31,6 +31,9 @@ Added new API to remove member from a multipoint session
 
 Upgraded IOS support from IOS6 to IOS7
 
+Added the About feature for Linux and Android. This feature is not
+yet supported on other platforms.
+
 
 Issues Addressed in Version 3.4.0
 ---------------------------------

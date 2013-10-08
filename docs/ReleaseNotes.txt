@@ -57,6 +57,8 @@ ALLJOYN-2138/2191: Memory leak seen when running ConsumerService on Linux
 
 ALLJOYN-2178: Not all notifications are being recevied by notification consumer
 
+ALLJOYN-2206: Sessionless signals occasionally received more than once
+
 ALLJOYN-2339: Thin client discovery buffer too small
 
 ALLJOYN-2345: Inconsistencies between Java and CPP bindings related to security
@@ -71,7 +73,7 @@ client connection such as thin-client connection
 ALLJOYN-1973: AllJoyn does not support latest version of Android NDK. Last 
 officially supported version of NDK is 8C.
 
-ALLJOYN-2192: AllJoyn thin client does not support header compression.
+ALLJOYN-2192: AllJoyn thin client does not support header compression
 
 ALLJOYN-2340: local bbclient fails to join multipoint session after two
 remote clients join
@@ -144,6 +146,7 @@ include the directory where liballjoyn.so is located.
 Version 3.4 of the AllJoyn ICE transport changed the hostname for the Rendezvous
 server from rdvz.alljoyn.org to connect.alljoyn.org. As a result, pre-3.4 versions
 of AllJoyn cannot discover or connect using the ICE transport.
+
 
 Change history
 --------------

@@ -5,7 +5,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2011, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -255,7 +255,7 @@ QStatus ClientTransport::Connect(const char* connectArgs, const SessionOpts& opt
     qcc::String& spec = argMap["_spec"];
     status = qcc::Connect(sockFd, spec.c_str());
     if (status != ER_OK) {
-        QCC_LogError(status, ("ClientTransport(): socket Connect(%d, %s) failed", sockFd, spec.c_str()));
+        QCC_DbgHLPrintf(("ClientTransport(): socket Connect(%d, %s) failed: %s", sockFd, spec.c_str(), QCC_StatusText(status)));
         qcc::Close(sockFd);
         return status;
     }

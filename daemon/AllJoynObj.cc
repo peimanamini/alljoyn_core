@@ -138,7 +138,8 @@ QStatus AllJoynObj::Init()
         { alljoynIntf->GetMember("OnAppSuspend"),             static_cast<MessageReceiver::MethodHandler>(&AllJoynObj::OnAppSuspend) },
         { alljoynIntf->GetMember("OnAppResume"),              static_cast<MessageReceiver::MethodHandler>(&AllJoynObj::OnAppResume) },
         { alljoynIntf->GetMember("CancelSessionlessMessage"), static_cast<MessageReceiver::MethodHandler>(&AllJoynObj::CancelSessionlessMessage) },
-        { alljoynIntf->GetMember("RemoveSessionMember"), static_cast<MessageReceiver::MethodHandler>(&AllJoynObj::RemoveSessionMember) }
+        { alljoynIntf->GetMember("RemoveSessionMember"),      static_cast<MessageReceiver::MethodHandler>(&AllJoynObj::RemoveSessionMember) },
+        { alljoynIntf->GetMember("GetHostIp"),             static_cast<MessageReceiver::MethodHandler>(&AllJoynObj::GetHostIp) }
     };
 
     AddInterface(*alljoynIntf);
@@ -1175,6 +1176,7 @@ void AllJoynObj::LeaveSession(const InterfaceDescription::Member* member, Messag
         QCC_LogError(status, ("Failed to respond to org.alljoyn.Bus.LeaveSession"));
     }
 }
+
 void AllJoynObj::RemoveSessionMember(const InterfaceDescription::Member* member, Message& msg)
 {
     uint32_t replyCode = ALLJOYN_REMOVESESSIONMEMBER_REPLY_SUCCESS;
@@ -1279,6 +1281,61 @@ void AllJoynObj::RemoveSessionMember(const InterfaceDescription::Member* member,
         QCC_LogError(status, ("Failed to respond to org.alljoyn.Bus.RemoveSessionMember"));
     }
 }
+
+void AllJoynObj::GetHostIp(const InterfaceDescription::Member* member, Message& msg)
+{
+    uint32_t replyCode = ALLJOYN_GETHOSTIP_REPLY_SUCCESS;
+
+    size_t numArgs;
+    const MsgArg* args;
+
+    /* Parse the message args */
+    msg->GetArgs(numArgs, args);
+    assert(numArgs == 1);
+    SessionId id = static_cast<SessionId>(args[0].v_uint32);
+
+    QCC_DbgPrintf(("AllJoynObj::GetHostIp(%u)", id));
+
+    String ipAddrStr = "";
+    /* Find the session with that id */
+    AcquireLocks();
+    SessionMapEntry* smEntry = SessionMapFind(msg->GetSender(), id);
+    if (!smEntry || (id == 0)) {
+        replyCode = ALLJOYN_GETHOSTIP_REPLY_NO_SESSION;
+        ReleaseLocks();
+    } else if (smEntry->sessionHost == msg->GetSender()) {
+        replyCode = ALLJOYN_GETHOSTIP_REPLY_IS_BINDER;
+        ReleaseLocks();
+    } else {
+        /* get the vep to the sessionhost.
+         */
+        VirtualEndpoint vep;
+        router.FindEndpoint(smEntry->sessionHost, vep);
+        if (vep->IsValid()) {
+            RemoteEndpoint rep = vep->GetBusToBusEndpoint(id);
+            QStatus status = rep->GetRemoteIp(ipAddrStr);
+            if (status != ER_OK) {
+                replyCode = ALLJOYN_GETHOSTIP_REPLY_NOT_SUPPORTED_ON_TRANSPORT;
+            }
+        } else {
+            replyCode = ALLJOYN_GETHOSTIP_REPLY_FAILED;
+        }
+
+        ReleaseLocks();
+    }
+    const char* ipAddr = ipAddrStr.c_str();
+    /* Reply to request */
+    MsgArg replyArgs[2];
+    replyArgs[0].Set("u", replyCode);
+    replyArgs[1].Set("s", ipAddr);
+    QStatus status = MethodReply(msg, replyArgs, ArraySize(replyArgs));
+
+    /* Log error if reply could not be sent */
+    if (ER_OK != status) {
+        QCC_LogError(status, ("Failed to respond to org.alljoyn.Bus.GetHostIp"));
+    }
+}
+
 qcc::ThreadReturn STDCALL AllJoynObj::JoinSessionThread::RunAttach()
 {
     SessionId id = 0;

@@ -575,8 +575,10 @@ QStatus _LocalEndpoint::DoRegisterBusObject(BusObject& object, BusObject* parent
          * the callbacks will be made later when the client router calls
          * OnBusConnected().
          */
-        if (bus->GetInternal().GetRouter().IsBusRunning()) {
+        if (bus->GetInternal().GetRouter().IsBusRunning() && !isPlaceholder) {
+            objectsLock.Unlock(MUTEX_CONTEXT);
             OnBusConnected();
+            objectsLock.Lock(MUTEX_CONTEXT);
         }
     }
 

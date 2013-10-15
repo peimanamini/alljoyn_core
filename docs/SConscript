@@ -61,7 +61,7 @@ elif docenv['DOCS'] == 'sandcastle':
     if not os.environ.has_key('SHFBROOT'):
         print 'Missing required environment build variable SHFBROOT'
         if not GetOption('help'):
-            Exit()
+            Exit(1)
 
     chm_env = docenv.Clone();
 

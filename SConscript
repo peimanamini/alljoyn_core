@@ -42,7 +42,7 @@ if ajenv['VARIANT'] == 'debug':
         if (not(os.environ.has_key('COVFILE'))):
             print('Error: COVFILE environment variable must be set')
             if not GetOption('help'):
-                Exit()
+                Exit(1)
         else:
             ajenv.PrependENVPath('COVFILE', os.environ['COVFILE'])
 

@@ -362,6 +362,14 @@ class AllJoynObj : public BusObject, public NameListener, public TransportListen
     void RemoveSessionMember(const InterfaceDescription::Member* member, Message& msg);
 
     /**
+     * Method handler for org.alljoyn.Bus.GetHostIp
+     *
+     * @param member    Interface member.
+     * @param msg       The incoming method call message.
+     *
+     */
+    void GetHostIp(const InterfaceDescription::Member* member, Message& msg);
+    /**
      * Add a new Bus-to-bus endpoint.
      *
      * @param endpoint  Bus-to-bus endpoint to add.

@@ -380,6 +380,13 @@ class _RemoteEndpoint : public _BusEndpoint, public qcc::ThreadListener, public 
      */
     bool IsSessionRouteSetUp();
 
+    /**
+     * Get the IP address of the remote end.
+     * @param ipAddr [OUT] The IP address of the remote end.
+     * @return status ER_OK if the IP address is valid, or error.
+     */
+    virtual QStatus GetRemoteIp(qcc::String& ipAddr) { return ER_NOT_IMPLEMENTED; };
+
   protected:
 
     /**

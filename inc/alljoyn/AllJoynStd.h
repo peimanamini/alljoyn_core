@@ -397,6 +397,27 @@ QStatus CreateInterfaces(BusAttachment& bus);          /**< Create the org.alljo
 #define ALLJOYN_REMOVESESSIONMEMBER_REPLY_FAILED               7   /**< RemoveSessionMember reply: Failed for unspecified reason */
 // @}
 
+/**
+ * @name org.alljoyn.Bus.GetHostIp
+ *  Interface: org.alljoyn.Bus
+ *  Method: GetHostIp(uint32_t sessionId)
+ *
+ *  Input params:
+ *     sessionId - Session for which the host IP needs to be obtained.
+ *
+ *  Output params:
+ *     disposition - One of the ALLJOYN_GETHOSTIP_* dispositions listed below
+ *     ipAddr      - IP Address of the Host
+ *
+ */
+// @{
+/* org.alljoyn.Bus.GetHostIp */
+#define ALLJOYN_GETHOSTIP_REPLY_SUCCESS                    1   /**< GetHostIp reply: Success */
+#define ALLJOYN_GETHOSTIP_REPLY_NO_SESSION                 2   /**< GetHostIp reply: Session with the specified session ID does not exist. */
+#define ALLJOYN_GETHOSTIP_REPLY_IS_BINDER                  3   /**< GetHostIp reply: Session was found, but sender is the binder, so this is not allowed */
+#define ALLJOYN_GETHOSTIP_REPLY_NOT_SUPPORTED_ON_TRANSPORT 4   /**< GetHostIp reply: Session was found, but this method call is not supported on the transport this session is on */
+#define ALLJOYN_GETHOSTIP_REPLY_FAILED                     5   /**< GetHostIp reply: Failed for unspecified reason */
+// @}
 }
 
 #undef QCC_MODULE

@@ -480,6 +480,11 @@ class _TCPEndpoint : public _RemoteEndpoint {
 
     virtual ~_TCPEndpoint() { }
 
+    QStatus GetRemoteIp(qcc::String& ipAddrStr) {
+        ipAddrStr = m_ipAddr.ToString();
+        return ER_OK;
+    };
+
     void SetStartTime(qcc::Timespec tStart) { m_tStart = tStart; }
     qcc::Timespec GetStartTime(void) { return m_tStart; }
     QStatus Authenticate(void);

@@ -4,7 +4,7 @@
  */
 
 /******************************************************************************
- * Copyright 2010-2012, Qualcomm Innovation Center, Inc.
+ * Copyright 2010-2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -1204,9 +1204,9 @@ void AllJoynObj::RemoveSessionMember(const InterfaceDescription::Member* member,
         if (!smEntry || (id == 0)) {
             replyCode = ALLJOYN_REMOVESESSIONMEMBER_REPLY_NO_SESSION;
         } else if (!smEntry->opts.isMultipoint) {
-            replyCode = ALLJOYN_REMOVESESSIONMEMBER_NOT_MULTIPOINT;
+            replyCode = ALLJOYN_REMOVESESSIONMEMBER_REPLY_NOT_MULTIPOINT;
         } else if (smEntry->sessionHost != msg->GetSender()) {
-            replyCode = ALLJOYN_REMOVESESSIONMEMBER_NOT_BINDER;
+            replyCode = ALLJOYN_REMOVESESSIONMEMBER_REPLY_NOT_BINDER;
         } else {
             /* Search for this member in the member names. */
             vector<String>::iterator mit = smEntry->memberNames.begin();
@@ -1221,7 +1221,7 @@ void AllJoynObj::RemoveSessionMember(const InterfaceDescription::Member* member,
             }
 
             if (!found) {
-                replyCode = ALLJOYN_REMOVESESSIONMEMBER_NOT_FOUND;
+                replyCode = ALLJOYN_REMOVESESSIONMEMBER_REPLY_NOT_FOUND;
             } else {
                 /* Find the virtual endpoint associated with the remote daemon
                  * for the session member we want to remove.
@@ -1238,7 +1238,7 @@ void AllJoynObj::RemoveSessionMember(const InterfaceDescription::Member* member,
                          * feature. So, if the remote daemon is older, then do not allow this
                          * method call.
                          */
-                        replyCode = ALLJOYN_REMOVESESSIONMEMBER_INCOMPATIBLE_REMOTE_DAEMON;
+                        replyCode = ALLJOYN_REMOVESESSIONMEMBER_REPLY_INCOMPATIBLE_REMOTE_DAEMON;
                     }
                 }
             }

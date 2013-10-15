@@ -6,7 +6,7 @@
  */
 
 /******************************************************************************
- * Copyright 2009-2011, Qualcomm Innovation Center, Inc.
+ * Copyright 2009-2013, Qualcomm Innovation Center, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -388,13 +388,13 @@ QStatus CreateInterfaces(BusAttachment& bus);          /**< Create the org.alljo
  */
 // @{
 /* org.alljoyn.Bus.RemoveSessionMember */
-#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_SUCCESS              1   /**< RemoveSessionMember reply: Success */
-#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_NO_SESSION           2   /**< RemoveSessionMember reply: Session with sender and session ID does not exist. */
-#define ALLJOYN_REMOVESESSIONMEMBER_NOT_BINDER                 3   /**< RemoveSessionMember reply: Session was found, but sender is not the binder */
-#define ALLJOYN_REMOVESESSIONMEMBER_NOT_MULTIPOINT             4   /**< RemoveSessionMember reply: Session was found, but is not multipoint */
-#define ALLJOYN_REMOVESESSIONMEMBER_NOT_FOUND                  5   /**< RemoveSessionMember reply: Session was found, but the specified session member was not found */
-#define ALLJOYN_REMOVESESSIONMEMBER_INCOMPATIBLE_REMOTE_DAEMON 6   /**< RemoveSessionMember reply: Session was found, but the remote daemon does not support this feature */
-#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_FAILED               7   /**< RemoveSessionMember reply: Failed for unspecified reason */
+#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_SUCCESS                    1   /**< RemoveSessionMember reply: Success */
+#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_NO_SESSION                 2   /**< RemoveSessionMember reply: Session with sender and session ID does not exist. */
+#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_NOT_BINDER                 3   /**< RemoveSessionMember reply: Session was found, but sender is not the binder */
+#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_NOT_MULTIPOINT             4   /**< RemoveSessionMember reply: Session was found, but is not multipoint */
+#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_NOT_FOUND                  5   /**< RemoveSessionMember reply: Session was found, but the specified session member was not found */
+#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_INCOMPATIBLE_REMOTE_DAEMON 6   /**< RemoveSessionMember reply: Session was found, but the remote daemon does not support this feature */
+#define ALLJOYN_REMOVESESSIONMEMBER_REPLY_FAILED                     7   /**< RemoveSessionMember reply: Failed for unspecified reason */
 // @}
 
 /**

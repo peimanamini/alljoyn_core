@@ -59,8 +59,8 @@ else:
         gtest_env.Append(CXXFLAGS = ['/EHsc'])
 
     if gtest_env['OS_CONF'] == 'android':
-        # This include directory needs to come first for Android so that it can find wcscasecmp
-        gtest_env.Prepend(CPPPATH = ['$ANDROID_NDK/sources/android/support/include'])
+        # used by gtest to prevent use of wcscasecmp and set GTEST_HAS_STD_WSTRING=0
+        gtest_env.Append(CPPDEFINES = ['ANDROID'])
 
     # tr1::tuple is not avalible for android or darwin
     if gtest_env['OS_CONF'] == 'android' or gtest_env['OS_CONF'] == 'darwin':
@@ -103,7 +103,11 @@ else:
 
     # we compile with no rtti and we are not using exceptions.
     unittest_env.Append(CPPDEFINES = ['GTEST_HAS_RTTI=0'])
-    
+
+    if unittest_env['OS_CONF'] == 'android':
+        # used by gtest to prevent use of wcscasecmp and set GTEST_HAS_STD_WSTRING=0
+        unittest_env.Append(CPPDEFINES = ['ANDROID'])
+
     # tr1::tuple is not avalible for android or darwin
     if unittest_env['OS_CONF'] == 'android' or unittest_env['OS_CONF'] == 'darwin':
         unittest_env.Append(CPPDEFINES = ['GTEST_HAS_TR1_TUPLE=0'])

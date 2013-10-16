@@ -292,7 +292,7 @@ QStatus BTTransport::BTAccessor::Start()
 
         /* Get environment variable for the system bus */
         Environ* env(Environ::GetAppEnviron());
-#ifdef ANDROID
+#ifdef QCC_OS_ANDROID
         connectArgs = env->Find("DBUS_SYSTEM_BUS_ADDRESS", "unix:path=/dev/socket/dbus");
 #else
         connectArgs = env->Find("DBUS_SYSTEM_BUS_ADDRESS", "unix:path=/var/run/dbus/system_bus_socket");

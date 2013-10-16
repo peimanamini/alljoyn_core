@@ -409,7 +409,7 @@ int main(int argc, char** argv)
     bool wait = false;
     uint32_t runTime = -1;
 
-#ifdef ANDROID
+#ifdef QCC_OS_ANDROID
     qcc::String connectArgs(env->Find("DBUS_SYSTEM_BUS_ADDRESS",
                                       "unix:path=/dev/socket/dbus"));
 #else
